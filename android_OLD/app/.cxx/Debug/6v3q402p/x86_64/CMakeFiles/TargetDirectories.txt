@@ -1,0 +1,2 @@
+/Users/chirantan/Applications/outlet_app/android/app/.cxx/Debug/6v3q402p/x86_64/CMakeFiles/rebuild_cache.dir
+/Users/chirantan/Applications/outlet_app/android/app/.cxx/Debug/6v3q402p/x86_64/CMakeFiles/edit_cache.dir
