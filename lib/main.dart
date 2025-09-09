@@ -26,11 +26,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Firebase.initializeApp();
+
   // Must be set BEFORE Firebase is initialized
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  await Firebase.initializeApp();
-  
   final container = ProviderContainer();
   final notificationService = NotificationService(container);
   await notificationService.init(); // ✅ AFTER Firebase.init()

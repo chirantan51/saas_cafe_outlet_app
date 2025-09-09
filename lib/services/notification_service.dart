@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,7 +9,7 @@ import 'package:outlet_app/ui/widgets/order_detail_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:assets_audio_player/assets_audio_player.dart';
+//import 'package:assets_audio_player/assets_audio_player.dart';
 import '../providers/dashboard_refresh_provider.dart';
 import 'package:flutter/services.dart';
 
@@ -17,7 +18,7 @@ class NotificationService {
 
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   final ProviderContainer container;
-  final AssetsAudioPlayer _audioPlayer = AssetsAudioPlayer();
+  final player = AudioPlayer();
 
   NotificationService(this.container);
 
@@ -117,16 +118,18 @@ class NotificationService {
     container.read(dashboardRefreshProvider.notifier).state = true;
   }
 
-  void _playSound() {
-    _audioPlayer.open(
-      Audio("assets/sounds/order-alert-1.mp3"),
-      loopMode: LoopMode.single,
-      autoStart: true,
-    );
+  void _playSound() async {
+    await player.play(AssetSource('assets/sounds/order-alert-1.mp3'));
+
+    // _audioPlayer.open(
+    //   Audio("assets/sounds/order-alert-1.mp3"),
+    //   loopMode: LoopMode.single,
+    //   autoStart: true,
+    // );
   }
 
-  void _stopSound() {
-    _audioPlayer.stop();
+  void _stopSound() async {
+    await player.stop();
   }
 
   static Future<void> clearTokenFromBackend() async {

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fluttertoast/fluttertoast.dart';
+//import 'package:fluttertoast/fluttertoast.dart';
 import 'verify_otp_screen.dart';
 import '../../constants.dart'; // Import the constants
 
@@ -17,7 +17,13 @@ class GenerateOtpScreen extends StatelessWidget {
     final String mobile = _mobileController.text.trim();
 
     if (mobile.isEmpty || mobile.length != 10) {
-      Fluttertoast.showToast(msg: "Please enter a valid 10-digit mobile number.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter a valid 10-digit mobile number.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      //Fluttertoast.showToast(msg: "Please enter a valid 10-digit mobile number.");
       return;
     }
 
@@ -32,7 +38,13 @@ class GenerateOtpScreen extends StatelessWidget {
       final data = json.decode(response.body);
 
       if (data["success"] == true) {
-        Fluttertoast.showToast(msg: "OTP Sent Successfully!");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('OTP Sent Successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        //Fluttertoast.showToast(msg: "OTP Sent Successfully!");
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -40,10 +52,22 @@ class GenerateOtpScreen extends StatelessWidget {
           ),
         );
       } else {
-        Fluttertoast.showToast(msg: data["message"] ?? "Failed to send OTP");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('data["message"] ?? "Failed to send OTP'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        //Fluttertoast.showToast(msg: data["message"] ?? "Failed to send OTP");
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error: ${e.toString()}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      //Fluttertoast.showToast(msg: "Error: ${e.toString()}");
     }
 
     _isLoading.value = false; // ✅ Hide loading state
