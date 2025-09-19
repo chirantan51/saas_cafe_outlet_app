@@ -21,6 +21,7 @@ class OrderItem {
 class OrderModel {
   final String orderId;
   final String status;
+  final String? orderType; // 'OnDemand' | 'Subscription' | 'Scheduled'
   final String customer;
   final String customerMobile;
   final double grossTotal;
@@ -29,11 +30,16 @@ class OrderModel {
   final String paymentStatus;
   final String? deliveryAddress;
   final DateTime placedAt;
+  final DateTime? scheduledFor; // for scheduled orders
+  final DateTime? deliveredAt; // completion timestamp
+  final int? approximateDeliveryDuration; // minutes target from server
+  final DateTime? approximateDeliveryTime; // optional ETA timestamp from server
   final List<OrderItem> items;
 
   OrderModel({
     required this.orderId,
     required this.status,
+    this.orderType,
     required this.customer,
     required this.customerMobile,
     required this.grossTotal,
@@ -42,6 +48,10 @@ class OrderModel {
     required this.paymentStatus,
     required this.deliveryAddress,
     required this.placedAt,
+    this.scheduledFor,
+    this.deliveredAt,
+    this.approximateDeliveryDuration,
+    this.approximateDeliveryTime,
     required this.items,
   });
 
@@ -49,6 +59,7 @@ class OrderModel {
     return OrderModel(
       orderId: json['order_id'],
       status: json['status'],
+      orderType: json['order_type'],
       customer: json['customer_name'] ?? '',
       customerMobile: json['customer_mobile'] ?? '',
       grossTotal: double.tryParse(json['gross_total'].toString()) ?? 0.0,
@@ -57,6 +68,24 @@ class OrderModel {
       paymentStatus: json['payment_status'] ?? '',
       deliveryAddress: json['delivery_address'],
       placedAt: DateTime.parse(json['placed_at']),
+      scheduledFor: json['scheduled_for'] != null && (json['scheduled_for'] as String).isNotEmpty
+          ? DateTime.tryParse(json['scheduled_for'])
+          : null,
+      deliveredAt: json['delivered_at'] != null && (json['delivered_at'] as String).isNotEmpty
+          ? DateTime.tryParse(json['delivered_at'])
+          : null,
+      approximateDeliveryDuration: (() {
+        final v = json['approximate_delivery_duration'];
+        if (v == null) return null;
+        if (v is num) return v.toInt();
+        return int.tryParse(v.toString());
+      }()),
+      approximateDeliveryTime: (() {
+        final v = json['approximate_delivery_time'];
+        if (v == null) return null;
+        if (v is String && v.isNotEmpty) return DateTime.tryParse(v);
+        return null;
+      }()),
       items: (json['items'] as List<dynamic>?)
               ?.map((item) => OrderItem.fromJson(item))
               .toList() ??

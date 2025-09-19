@@ -7,6 +7,8 @@ import 'package:outlet_app/providers/dashboard_refresh_provider.dart';
 import 'package:outlet_app/providers/recent_orders_provider.dart';
 import 'package:outlet_app/providers/subscription_products_provider.dart';
 import 'package:outlet_app/ui/widgets/order_detail_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:outlet_app/services/order_service.dart';
 import 'package:outlet_app/ui/screens/manage_menu_screen.dart';
 
 class DashboardV3Screen extends ConsumerStatefulWidget {
@@ -827,6 +829,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
     with SingleTickerProviderStateMixin {
   // Local phase state per orderId: 'Orders' | 'Packed' | 'Dispatched' | 'Delivered'
   final Map<String, String> _phases = {};
+  final Set<String> _updating = {};
 
   bool _isAddon(OrderItem item) => item.productName.toLowerCase().contains('addon') || item.productName.toLowerCase().contains('add-on');
 
@@ -894,7 +897,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
   }
 
   int _rootTab = 0; // 0 Orders,1 Packed,2 Dispatched,3 Delivered
-  static const List<String> _phaseLabels = ['Orders', 'Packed', 'Dispatched', 'Delivered'];
+  static const List<String> _phaseLabels = ['Orders', 'Ready', 'Delivering', 'Delivered'];
   final Map<String, String> _demoPhases = {};
   late TabController _phaseController;
   String _labelWithCount(String base, int count) => count > 0 ? '$base ($count)' : base;
@@ -914,6 +917,19 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
   void dispose() {
     _phaseController.dispose();
     super.dispose();
+  }
+
+  String _phaseFromStatus(String status) {
+    switch (status) {
+      case 'Delivered':
+        return 'Delivered';
+      case 'Delivering':
+        return 'Delivering';
+      case 'Ready':
+        return 'Ready';
+      default:
+        return 'Orders';
+    }
   }
 
   List<Widget> _buildPhaseRootChildren(BuildContext context) {
@@ -1007,6 +1023,9 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
       
       return [
         _rootPhaseTabs(counts),
+        const SizedBox(height: 5),
+        const Divider(height: 1),
+        const SizedBox(height: 5),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: Column(key: ValueKey(_rootTab), crossAxisAlignment: CrossAxisAlignment.start, children: body),
@@ -1033,7 +1052,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
       // Filter orders for selected phase
       final filtered = <OrderModel>[];
       for (final o in orders) {
-        final phase = _phases[o.orderId] ?? 'Orders';
+        final phase = _phases[o.orderId] ?? _phaseFromStatus(o.status);
         final idx = _phaseLabels.indexOf(phase);
         if (idx >= 0) counts[idx]++;
         if (phase == labelSelected) filtered.add(o);
@@ -1071,7 +1090,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
                   ),
                   if (hasAddon)
                     const Icon(Icons.add_circle, color: Colors.blue, size: 18),
-                  _actionButtonFor(o.orderId, _phases[o.orderId] ?? 'Orders'),
+                  _actionButtonFor(o.orderId, _phases[o.orderId] ?? _phaseFromStatus(o.status)),
                 ],
               ),
             );
@@ -1090,6 +1109,9 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
     
     return [
       _rootPhaseTabs(counts),
+      const SizedBox(height: 5),
+      const Divider(height: 1),
+      const SizedBox(height: 5),
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: Column(key: ValueKey(_rootTab), crossAxisAlignment: CrossAxisAlignment.start, children: body),
@@ -1137,6 +1159,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
         child: TabBar(
           controller: _phaseController,
           isScrollable: true,
+          dividerColor: Colors.transparent,
           labelPadding: const EdgeInsets.symmetric(horizontal: 12),
           labelColor: Colors.white,
           unselectedLabelColor: const Color(0xFF54A079),
@@ -1148,8 +1171,8 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
           indicatorSize: TabBarIndicatorSize.label,
           tabs: [
             Tab(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Text(_labelWithCount('Orders', counts[0])))),
-            Tab(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Text(_labelWithCount('Packed', counts[1])))),
-            Tab(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Text(_labelWithCount('Dispatched', counts[2])))),
+            Tab(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Text(_labelWithCount('Ready', counts[1])))),
+            Tab(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Text(_labelWithCount('Delivering', counts[2])))),
             Tab(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Text(_labelWithCount('Delivered', counts[3])))),
           ],
         ),
@@ -1183,18 +1206,43 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
   Widget _actionButtonFor(String orderId, String phase) {
     String? next;
     String? label;
-    if (phase == 'Orders') { next = 'Packed'; label = 'Packed'; }
-    else if (phase == 'Packed') { next = 'Dispatched'; label = 'Dispatch'; }
-    else if (phase == 'Dispatched') { next = 'Delivered'; label = 'Deliver'; }
+    if (phase == 'Orders') { next = 'Ready'; label = 'Ready'; }
+    else if (phase == 'Ready') { next = 'Delivering'; label = 'Delivering'; }
+    else if (phase == 'Delivering') { next = 'Delivered'; label = 'Deliver'; }
 
     if (next == null) {
       return const Icon(Icons.check_circle, color: Colors.green);
     }
 
+    if (_updating.contains(orderId)) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
     return ElevatedButton(
-      onPressed: () {
-        _phases[orderId] = next!;
-        setState(() {});
+      onPressed: () async {
+        setState(() => _updating.add(orderId));
+        bool ok = false;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final token = prefs.getString('auth_token');
+          if (token == null) throw Exception('Not authenticated');
+          ok = await updateOrderStatus(orderId: orderId, newStatus: next!, authToken: token);
+        } catch (e) {
+          ok = false;
+        }
+        if (!mounted) return;
+        if (ok) {
+          _phases[orderId] = next!;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update status')), 
+          );
+        }
+        setState(() => _updating.remove(orderId));
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF54A079),
@@ -1209,9 +1257,9 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
   Widget _demoActionButtonFor(String id, String phase) {
     String? next;
     String? label;
-    if (phase == 'Orders') { next = 'Packed'; label = 'Packed'; }
-    else if (phase == 'Packed') { next = 'Dispatched'; label = 'Dispatch'; }
-    else if (phase == 'Dispatched') { next = 'Delivered'; label = 'Deliver'; }
+    if (phase == 'Orders') { next = 'Ready'; label = 'Ready'; }
+    else if (phase == 'Ready') { next = 'Delivering'; label = 'Delivering'; }
+    else if (phase == 'Delivering') { next = 'Delivered'; label = 'Deliver'; }
 
     if (next == null) {
       return const Icon(Icons.check_circle, color: Colors.green);

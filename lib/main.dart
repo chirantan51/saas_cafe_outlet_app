@@ -7,6 +7,14 @@ import 'package:outlet_app/ui/screens/menu_item_screen.dart';
 import 'package:outlet_app/ui/theme.dart';
 import 'ui/screens/generate_otp_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
+import 'ui/screens/dashboard_v2.dart';
+import 'ui/screens/dashboard_v3.dart';
+import 'providers/dashboard_provider.dart';
+import 'providers/recent_orders_provider.dart';
+import 'providers/menu_provider.dart';
+import 'providers/category_provider.dart';
+import 'providers/business_mode_provider.dart';
+import 'providers/subscription_products_provider.dart';
 import 'providers/auth_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -49,11 +57,39 @@ void main() async {
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  late final ProviderSubscription<AuthState> _authSub;
+  @override
+  void initState() {
+    super.initState();
+    // Listen for auth changes to clear provider caches on logout/login
+    _authSub = ref.listenManual<AuthState>(authProvider, (prev, next) {
+      // Invalidate data providers whenever auth flips to ensure fresh data
+      ref.invalidate(dashboardProvider);
+      ref.invalidate(recentOrdersProvider);
+      ref.invalidate(menuProvider);
+      ref.invalidate(businessModeProvider);
+      ref.invalidate(subscriptionDashboardProvider);
+      // Category-related fetch providers will rebuild as needed
+      // If there are additional user-scoped providers, invalidate them here.
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider); // ✅ Listen to auth state
 
     return MaterialApp(
@@ -63,6 +99,8 @@ class MyApp extends ConsumerWidget {
       routes: {
         "/login": (context) => GenerateOtpScreen(),
         "/dashboard": (context) => const DashboardScreen(),
+        "/dashboard-v2": (context) => const DashboardV2Screen(),
+        "/dashboard-v3": (context) => const DashboardV3Screen(),
         "/manage-menu": (context) => const ManageMenuScreen(),
       },
       onGenerateRoute: (settings) {
@@ -87,7 +125,7 @@ class MyApp extends ConsumerWidget {
       },
       debugShowCheckedModeBanner: false,
       home: authState.isAuthenticated
-          ? const DashboardScreen()
+          ? const DashboardV3Screen()
           : GenerateOtpScreen(),
     );
   }

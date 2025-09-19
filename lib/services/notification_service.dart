@@ -119,7 +119,8 @@ class NotificationService {
   }
 
   void _playSound() async {
-    await player.play(AssetSource('assets/sounds/order-alert-1.mp3'));
+    // With audioplayers >=6, AssetSource expects path relative to your pubspec assets root (no leading 'assets/')
+    await player.play(AssetSource('sounds/order-alert-1.mp3'));
 
     // _audioPlayer.open(
     //   Audio("assets/sounds/order-alert-1.mp3"),

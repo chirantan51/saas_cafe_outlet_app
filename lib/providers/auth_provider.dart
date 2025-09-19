@@ -40,6 +40,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("auth_token");
+    // Clear any user-scoped prefs if present
+    await prefs.remove('business_mode');
     state = AuthState(authToken: null, isAuthenticated: false);
   }
 }

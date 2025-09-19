@@ -5,15 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/order_model.dart';
 import '../constants.dart';
 
-final recentOrdersProvider =
-    FutureProvider<List<OrderModel>>((ref) async {
+final recentOrdersProvider = FutureProvider<List<OrderModel>>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');
 
   if (token == null) throw Exception("Not authenticated");
 
   final response = await http.get(
-    Uri.parse("$BASE_URL/api/orders/recent-orders/"),
+    Uri.parse("$BASE_URL/api/orders/dashboard-orders-ondemand/"),
     headers: {
       'Authorization': 'Token $token',
       'Content-Type': 'application/json',
@@ -21,8 +20,11 @@ final recentOrdersProvider =
   );
 
   if (response.statusCode == 200) {
-    final List decoded = jsonDecode(response.body);
-    return decoded.map((json) => OrderModel.fromJson(json)).toList();
+    final decoded = jsonDecode(response.body);
+    final List orders = decoded is Map<String, dynamic>
+        ? (decoded['data']?['orders'] as List? ?? const [])
+        : (decoded as List? ?? const []);
+    return orders.map((json) => OrderModel.fromJson(json)).toList();
   } else {
     throw Exception("Failed to load recent orders");
   }
