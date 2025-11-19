@@ -23,6 +23,11 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def mapsApiKey = localProperties.getProperty('MAPS_API_KEY') ?: System.getenv('MAPS_API_KEY') ?: ""
+if (!mapsApiKey) {
+    println "Warning: Google Maps API key not set. Add MAPS_API_KEY to local.properties or environment to avoid runtime crashes."
+}
+
 android {
     namespace "com.example.outlet_app"
     compileSdk flutter.compileSdkVersion
@@ -48,6 +53,10 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
+        manifestPlaceholders = [
+                applicationName: "io.flutter.app.FlutterApplication",
+                MAPS_API_KEY : mapsApiKey
+        ]
     }
 
     buildTypes {

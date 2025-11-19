@@ -5,7 +5,8 @@ import 'package:outlet_app/constants.dart'; // BASE_URL
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ✅ Fetch categories
-final categoriesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final categoriesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final prefs = await SharedPreferences.getInstance();
   String? authToken = prefs.getString("auth_token");
 
@@ -18,24 +19,27 @@ final categoriesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
 
   if (response.statusCode == 200) {
     List<dynamic> data = jsonDecode(response.body);
-    return data.map((category) => {
-      "category_id": category["category_id"],
-      "name": category["name"],
-    }).toList();
+    return data
+        .map((category) => {
+              "category_id": category["category_id"],
+              "name": category["name"],
+            })
+        .toList();
   } else {
     throw Exception("Failed to fetch categories");
   }
 });
 
 /// ✅ Fetch product details (for editing mode)
-final fetchProductDetailsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, productId) async {
+final fetchProductDetailsProvider = FutureProvider.family
+    .autoDispose<Map<String, dynamic>, String>((ref, productId) async {
   final prefs = await SharedPreferences.getInstance();
   String? authToken = prefs.getString("auth_token");
 
   if (authToken == null) throw Exception("No authentication token found");
 
   final response = await http.get(
-    Uri.parse("$BASE_URL/api/products/$productId/"),
+    Uri.parse("$BASE_URL/api/products/$productId/edit-detail/"),
     headers: {"Authorization": "Token $authToken"},
   );
 
@@ -47,7 +51,9 @@ final fetchProductDetailsProvider = FutureProvider.family<Map<String, dynamic>, 
 });
 
 /// ✅ Manage form state using Riverpod
-final menuItemStateProvider = StateNotifierProvider.autoDispose<MenuItemNotifier, Map<String, dynamic>>((ref) {
+final menuItemStateProvider =
+    StateNotifierProvider.autoDispose<MenuItemNotifier, Map<String, dynamic>>(
+        (ref) {
   final notifier = MenuItemNotifier();
 
   // // Reset the state when the provider is disposed
@@ -59,15 +65,21 @@ final menuItemStateProvider = StateNotifierProvider.autoDispose<MenuItemNotifier
 });
 
 class MenuItemNotifier extends StateNotifier<Map<String, dynamic>> {
-  MenuItemNotifier() : super({
-    "display_image": "",
-    "name": "",
-    "description": "",
-    "size": "",
-    "price": "",
-    "selectedCategory": null,
-    "isActive": true,
-  });
+  MenuItemNotifier()
+      : super({
+          "display_image": "",
+          "name": "",
+          "description": "",
+          "size": "",
+          "price": "",
+          "stock": "",
+          "preparationTime": "",
+          "additionalTime": "",
+          "itemsIncluded": "",
+          "selectedCategory": null,
+          "isActive": true,
+          "customizable": false,
+        });
 
   void updateField(String key, dynamic value) {
     state = {...state, key: value};
@@ -75,13 +87,18 @@ class MenuItemNotifier extends StateNotifier<Map<String, dynamic>> {
 
   void reset() {
     state = {
-      "display_image":"",
+      "display_image": "",
       "name": "",
       "description": "",
       "size": "",
       "price": "",
+      "stock": "",
+      "preparationTime": "",
+      "additionalTime": "",
+      "itemsIncluded": "",
       "selectedCategory": null,
       "isActive": true,
+      "customizable": false,
     };
   }
 }

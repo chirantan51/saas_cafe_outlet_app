@@ -1,19 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:outlet_app/constants.dart';
+import 'package:outlet_app/core/utils/url_utils.dart';
 import 'package:outlet_app/providers/menu_item_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:outlet_app/constants.dart';
+
 import '../../providers/category_provider.dart';
 
 class NewEditCategoryScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
   final String? categoryId;
 
-  const NewEditCategoryScreen({Key? key, required this.isEditMode, this.categoryId})
+  const NewEditCategoryScreen(
+      {Key? key, required this.isEditMode, this.categoryId})
       : super(key: key);
 
   @override
@@ -29,7 +33,7 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
     super.initState();
     if (widget.isEditMode && widget.categoryId != null) {
       _fetchCategoryDetails();
-    } 
+    }
   }
 
   /// ✅ Fetch Category Details & Pre-fill form
@@ -156,8 +160,8 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
         throw Exception("Failed to save category");
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar( SnackBar(content: Text("Category ${state["name"]} created..")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Category ${state["name"]} created..")));
       // ✅ Refresh category list after save
       ref.invalidate(categoriesProvider);
       Navigator.pop(context, true);
@@ -245,20 +249,22 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
                           border: Border.all(color: Colors.grey),
                         ),
                         child: Center(
-                          child: categoryState["display_image"] != null &&
-                                  categoryState["display_image"].isNotEmpty
-                              ? Image.network(
-                                  "$BASE_URL${categoryState["display_image"]}",
-                                  fit: BoxFit.cover)
-                              : const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.camera_alt,
-                                        size: 50, color: Colors.grey),
-                                    Text("Upload Category Image",
-                                        style: TextStyle(color: Colors.grey)),
-                                  ],
-                                ),
+                          child: () {
+                            final imageUrl = resolveMediaUrl(
+                                categoryState["display_image"] as String?);
+                            if (imageUrl == null) {
+                              return const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.camera_alt,
+                                      size: 50, color: Colors.grey),
+                                  Text("Upload Category Image",
+                                      style: TextStyle(color: Colors.grey)),
+                                ],
+                              );
+                            }
+                            return Image.network(imageUrl, fit: BoxFit.cover);
+                          }(),
                         ),
                       ),
                     ),

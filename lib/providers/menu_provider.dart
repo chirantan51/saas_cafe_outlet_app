@@ -105,10 +105,29 @@ class MenuNotifier extends StateNotifier<MenuState> {
             for (var product in category["products"]) {
               if (product == null) continue;
               print(product);
+
+              final variantsRaw = (product["variants"] as List?)
+                      ?.whereType<Map<String, dynamic>>()
+                      .map((variant) => {
+                            "variant_id": variant["variant_id"],
+                            "name": variant["name"],
+                            "description": variant["description"],
+                            "price": variant["price"],
+                            "is_active": variant["is_active"],
+                            "slug": variant["slug"],
+                          })
+                      .toList() ??
+                  [];
+
               loadedItems.add({
                 "id": product["product_id"],
                 "name": product["name"],
                 "price": product["price"],
+                "description": product["description"],
+                "size": product["size"],
+                "customizable": product["customizable"],
+                "items_included": product["items_included"],
+                "variants": variantsRaw,
                 "category_id": category["category_id"],
                 "display_image":
                     product["display_image"] ?? "", // ✅ Fetch Image URL

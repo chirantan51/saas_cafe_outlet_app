@@ -4,26 +4,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:outlet_app/ui/screens/manage_menu_screen.dart';
 import 'package:outlet_app/ui/screens/new_edit_category_screen.dart';
 import 'package:outlet_app/ui/screens/menu_item_screen.dart';
+import 'package:outlet_app/ui/screens/subscription_create_subscription.dart';
 import 'package:outlet_app/ui/theme.dart';
+import 'ui/screens/create_subscription_plan_screen.dart';
+import 'ui/screens/about_us_screen.dart';
+import 'ui/screens/manage_subscriptions_screen.dart';
+import 'ui/screens/customer_management_screen.dart';
 import 'ui/screens/generate_otp_screen.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/dashboard_v2.dart';
 import 'ui/screens/dashboard_v3.dart';
+import 'ui/screens/dashboard_modern_screen.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/recent_orders_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/business_mode_provider.dart';
 import 'providers/subscription_products_provider.dart';
+import 'providers/customer_provider.dart';
 import 'providers/auth_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:outlet_app/services/notification_service.dart'; // Update with actual path
 
-
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('dkC: 🔄 Handling background message: ${message.messageId}');
-  
+
   // (Optional) Initialize Flutter or Firebase if needed
   await Firebase.initializeApp();
 
@@ -77,6 +83,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       ref.invalidate(menuProvider);
       ref.invalidate(businessModeProvider);
       ref.invalidate(subscriptionDashboardProvider);
+      ref.invalidate(customerListProvider);
       // Category-related fetch providers will rebuild as needed
       // If there are additional user-scoped providers, invalidate them here.
     });
@@ -101,7 +108,16 @@ class _MyAppState extends ConsumerState<MyApp> {
         "/dashboard": (context) => const DashboardScreen(),
         "/dashboard-v2": (context) => const DashboardV2Screen(),
         "/dashboard-v3": (context) => const DashboardV3Screen(),
+        "/dashboard-modern": (context) => const DashboardModernScreen(),
         "/manage-menu": (context) => const ManageMenuScreen(),
+        "/create-subscription-plan": (context) =>
+            const CreateSubscriptionPlanScreen(),
+        "/create-subscription": (context) =>
+            const SubscriptionCreateSubscriptionScreen(),
+        "/about-us": (context) => const AboutUsScreen(),
+        "/manage-subscriptions": (context) => const ManageSubscriptionsScreen(),
+        "/customer-management": (context) =>
+            const CustomerManagementScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == "/add-item") {
@@ -125,16 +141,16 @@ class _MyAppState extends ConsumerState<MyApp> {
       },
       debugShowCheckedModeBanner: false,
       home: authState.isAuthenticated
+          //? const DashboardModernScreen()
           ? const DashboardV3Screen()
           : GenerateOtpScreen(),
     );
   }
 }
 
-
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();
-  
+
 //   // ✅ Check if token exists and is valid
 //   SharedPreferences prefs = await SharedPreferences.getInstance();
 //   String? authToken = prefs.getString("auth_token");
@@ -162,7 +178,6 @@ class _MyAppState extends ConsumerState<MyApp> {
 //     );
 //   }
 // }
-
 
 // void main() {
 //   runApp(

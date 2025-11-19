@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../../providers/auth_provider.dart';
+
 import '../../constants.dart';
+import '../../providers/auth_provider.dart';
+import '../../utils/device_metadata.dart';
 import 'dashboard_screen.dart';
 
 class VerifyOtpScreen extends ConsumerWidget {
@@ -24,9 +27,14 @@ class VerifyOtpScreen extends ConsumerWidget {
     _isLoading.value = true;
 
     try {
+      final metadata = await DeviceMetadata.collect();
       final response = await http.post(
         Uri.parse("$BASE_URL/api/otp/outlets/register/"),
-        body: {"mobile": mobile, "otp": otp},
+        body: {
+          "mobile": mobile,
+          "otp": otp,
+          ...metadata.toRequestBody(),
+        },
       );
 
       final data = jsonDecode(response.body);
@@ -41,7 +49,8 @@ class VerifyOtpScreen extends ConsumerWidget {
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data["message"])));
+        final message = data["message"]?.toString() ?? "Failed to verify OTP";
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       _isLoading.value = false;

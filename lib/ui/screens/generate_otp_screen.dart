@@ -52,9 +52,10 @@ class GenerateOtpScreen extends StatelessWidget {
           ),
         );
       } else {
+        final message = data["message"]?.toString() ?? "Failed to send OTP";
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('data["message"] ?? "Failed to send OTP'),
+            content: Text(message),
             duration: Duration(seconds: 2),
           ),
         );
