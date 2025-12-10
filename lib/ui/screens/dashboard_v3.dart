@@ -17,6 +17,7 @@ import 'package:outlet_app/ui/screens/reports_screen.dart';
 import 'package:outlet_app/ui/widgets/order_detail_dialog.dart';
 import 'package:outlet_app/services/order_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:outlet_app/config/flavor_config.dart';
 
 String _connectionSafeMessage(Object error) {
   final message = error.toString();
@@ -214,7 +215,7 @@ class _DashboardV3ScreenState extends ConsumerState<DashboardV3Screen> {
                 ? BottomNavigationBar(
                     currentIndex: _bottomIndex,
                     type: BottomNavigationBarType.fixed,
-                    selectedItemColor: const Color(0xFF54A079),
+                    selectedItemColor: Theme.of(context).primaryColor,
                     unselectedItemColor: Colors.black54,
                     onTap: (idx) async {
                       setState(() => _bottomIndex = idx);
@@ -273,13 +274,13 @@ class _DashboardV3ScreenState extends ConsumerState<DashboardV3Screen> {
             appBar: AppBar(
               backgroundColor: Colors.white,
               elevation: 0,
-              title: const Text(
+              title: Text(
                 'Dashboard',
                 style: TextStyle(
-                    color: Color(0xFF54A079), fontWeight: FontWeight.w600),
+                    color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600),
               ),
               leading: IconButton(
-                icon: const Icon(Icons.menu, color: Color(0xFF54A079)),
+                icon: Icon(Icons.menu, color: Theme.of(context).primaryColor),
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
               bottom: PreferredSize(
@@ -379,10 +380,10 @@ class _DashboardV3ScreenState extends ConsumerState<DashboardV3Screen> {
                                   indicatorSize: TabBarIndicatorSize.tab,
                                   indicatorPadding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 6),
-                                  indicator: const BoxDecoration(
-                                    color: Color(0xFF54A079),
+                                  indicator: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
                                     borderRadius:
-                                        BorderRadius.all(Radius.circular(16)),
+                                        const BorderRadius.all(Radius.circular(16)),
                                   ),
                                   tabs: [
                                     Tab(text: label('New', countNew)),
@@ -510,20 +511,20 @@ class _DashboardDrawer extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(20, 24, 16, 24),
-              color: const Color(0xFF54A079),
+              color: Theme.of(context).primaryColor,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'Chaimates Outlet',
-                    style: TextStyle(
+                    FlavorConfig.instance.brandConfig.brandName,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     'Quick access',
                     style: TextStyle(
                       color: Colors.white70,
@@ -533,8 +534,8 @@ class _DashboardDrawer extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.local_offer_outlined,
-                  color: Color(0xFF54A079)),
+              leading: Icon(Icons.local_offer_outlined,
+                  color: Theme.of(context).primaryColor),
               title: const Text('Manage offers'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -543,8 +544,8 @@ class _DashboardDrawer extends StatelessWidget {
             ),
             if (onDeliverySettings != null)
               ListTile(
-                leading: const Icon(Icons.my_location_outlined,
-                    color: Color(0xFF54A079)),
+                leading: Icon(Icons.my_location_outlined,
+                    color: Theme.of(context).primaryColor),
                 title: const Text('Delivery settings'),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -553,8 +554,8 @@ class _DashboardDrawer extends StatelessWidget {
               ),
             if (onManageSubscriptions != null)
               ListTile(
-                leading: const Icon(Icons.subscriptions_outlined,
-                    color: Color(0xFF54A079)),
+                leading: Icon(Icons.subscriptions_outlined,
+                    color: Theme.of(context).primaryColor),
                 title: const Text('Manage subscriptions'),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -564,7 +565,7 @@ class _DashboardDrawer extends StatelessWidget {
             if (onCustomerManagement != null)
               ListTile(
                 leading:
-                    const Icon(Icons.people_outline, color: Color(0xFF54A079)),
+                    Icon(Icons.people_outline, color: Theme.of(context).primaryColor),
                 title: const Text('Customer management'),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -572,7 +573,7 @@ class _DashboardDrawer extends StatelessWidget {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.info_outline, color: Color(0xFF54A079)),
+              leading: Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
               title: const Text('About us'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -676,15 +677,15 @@ class _PillButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF54A079) : Colors.white,
+          color: active ? Theme.of(context).primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF54A079), width: 1.2),
+          border: Border.all(color: Theme.of(context).primaryColor, width: 1.2),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
-            color: active ? Colors.white : const Color(0xFF54A079),
+            color: active ? Colors.white : Theme.of(context).primaryColor,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -860,7 +861,7 @@ class _OfferManagePrompt extends StatelessWidget {
             hasCampaigns
                 ? Icons.local_offer_outlined
                 : Icons.new_releases_outlined,
-            color: const Color(0xFF54A079),
+            color: Theme.of(context).primaryColor,
             size: 32,
           ),
           const SizedBox(width: 12),
@@ -982,7 +983,7 @@ class _KpiCard extends StatelessWidget {
             decoration: BoxDecoration(
                 color: const Color(0x1A54A079),
                 borderRadius: BorderRadius.circular(8)),
-            child: Icon(kpi.icon, color: const Color(0xFF54A079)),
+            child: Icon(kpi.icon, color: Theme.of(context).primaryColor),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1114,8 +1115,8 @@ class _OrderTile extends StatelessWidget {
               runSpacing: 4,
               children: [
                 if ((order.orderType ?? 'OnDemand') == 'Subscription')
-                  const _TypeChip(
-                      label: 'Subscription', color: Color(0xFF54A079)),
+                  _TypeChip(
+                      label: 'Subscription', color: Theme.of(context).primaryColor),
                 if ((order.orderType ?? 'OnDemand') == 'Scheduled')
                   const _TypeChip(label: 'Scheduled', color: Colors.blue),
                 if (hasOnTimeInfo && delayDelta != null)
@@ -1396,7 +1397,7 @@ class _SubscriptionsOverviewV2 extends StatelessWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _slotHeaderModal(bucket.label, bucket.orders.length),
+                          _slotHeaderModal(context, bucket.label, bucket.orders.length),
                           ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -1423,15 +1424,15 @@ class _SubscriptionsOverviewV2 extends StatelessWidget {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF54A079)
+                                        color: Theme.of(context).primaryColor
                                             .withOpacity(.1),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                            color: const Color(0xFF54A079)),
+                                            color: Theme.of(context).primaryColor),
                                       ),
                                       child: Text('x$qty',
-                                          style: const TextStyle(
-                                              color: Color(0xFF54A079),
+                                          style: TextStyle(
+                                              color: Theme.of(context).primaryColor,
                                               fontWeight: FontWeight.w600)),
                                     ),
                                     if (hasAddon)
@@ -1456,13 +1457,13 @@ class _SubscriptionsOverviewV2 extends StatelessWidget {
     );
   }
 
-  Widget _slotHeaderModal(String label, int count) => Container(
+  Widget _slotHeaderModal(BuildContext context, String label, int count) => Container(
         margin: const EdgeInsets.only(top: 10, bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF54A079).withOpacity(.08),
+          color: Theme.of(context).primaryColor.withOpacity(.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF54A079)),
+          border: Border.all(color: Theme.of(context).primaryColor),
         ),
         child: Row(
           children: [
@@ -1480,12 +1481,12 @@ class _SubscriptionsOverviewV2 extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF54A079)),
+                border: Border.all(color: Theme.of(context).primaryColor),
               ),
               child: Text(
                 '$count orders',
-                style: const TextStyle(
-                    color: Color(0xFF54A079),
+                style: TextStyle(
+                    color: Theme.of(context).primaryColor,
                     fontWeight: FontWeight.w600,
                     fontSize: 12),
               ),
@@ -1554,11 +1555,11 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0x1A54A079),
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.inventory_2, color: Color(0xFF54A079)),
+            child: Icon(Icons.inventory_2, color: Theme.of(context).primaryColor),
           ),
           title: Text(
             widget.data.productName,
@@ -1693,13 +1694,13 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF54A079).withOpacity(.1),
+                    color: Theme.of(context).primaryColor.withOpacity(.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF54A079)),
+                    border: Border.all(color: Theme.of(context).primaryColor),
                   ),
                   child: Text('x$qty',
-                      style: const TextStyle(
-                          color: Color(0xFF54A079),
+                      style: TextStyle(
+                          color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.w600)),
                 ),
                 if (hasAddon)
@@ -1791,9 +1792,9 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
         margin: const EdgeInsets.only(top: 10, bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF54A079).withOpacity(.08),
+          color: Theme.of(context).primaryColor.withOpacity(.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF54A079)),
+          border: Border.all(color: Theme.of(context).primaryColor),
         ),
         child: Row(
           children: [
@@ -1811,12 +1812,12 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF54A079)),
+                border: Border.all(color: Theme.of(context).primaryColor),
               ),
               child: Text(
                 '$count orders',
-                style: const TextStyle(
-                    color: Color(0xFF54A079),
+                style: TextStyle(
+                    color: Theme.of(context).primaryColor,
                     fontWeight: FontWeight.w600,
                     fontSize: 12),
               ),
@@ -1833,9 +1834,9 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
           dividerColor: Colors.transparent,
           labelPadding: const EdgeInsets.symmetric(horizontal: 12),
           labelColor: Colors.white,
-          unselectedLabelColor: const Color(0xFF54A079),
+          unselectedLabelColor: Theme.of(context).primaryColor,
           indicator: BoxDecoration(
-            color: const Color(0xFF54A079),
+            color: Theme.of(context).primaryColor,
             borderRadius: BorderRadius.circular(16),
           ),
           indicatorPadding: const EdgeInsets.symmetric(
@@ -1880,13 +1881,13 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF54A079).withOpacity(.1),
+              color: Theme.of(context).primaryColor.withOpacity(.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF54A079)),
+              border: Border.all(color: Theme.of(context).primaryColor),
             ),
             child: Text('x$qty',
-                style: const TextStyle(
-                    color: Color(0xFF54A079), fontWeight: FontWeight.w600)),
+                style: TextStyle(
+                    color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600)),
           ),
           if (hasAddon)
             const Icon(Icons.add_circle, color: Colors.blue, size: 18),
@@ -1945,7 +1946,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
         setState(() => _updating.remove(orderId));
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF54A079),
+        backgroundColor: Theme.of(context).primaryColor,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         minimumSize: const Size(0, 0),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1979,7 +1980,7 @@ class _ProductExpandableTileState extends State<_ProductExpandableTile>
         setState(() {});
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF54A079),
+        backgroundColor: Theme.of(context).primaryColor,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         minimumSize: const Size(0, 0),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -2014,11 +2015,11 @@ class _ProductSummaryCard extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0x1A54A079),
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.inventory_2, color: Color(0xFF54A079)),
+              child: Icon(Icons.inventory_2, color: Theme.of(context).primaryColor),
             ),
             const SizedBox(width: 10),
             Expanded(

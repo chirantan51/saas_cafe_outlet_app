@@ -3,18 +3,17 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:outlet_app/constants.dart';
 import 'package:outlet_app/data/models/order_model.dart';
 import 'package:outlet_app/ui/widgets/order_detail_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:wakelock_plus/wakelock_plus.dart';
-//import 'package:assets_audio_player/assets_audio_player.dart';
 import '../providers/dashboard_refresh_provider.dart';
 import 'package:flutter/services.dart';
+import '../core/api_service.dart';
+import '../config/flavor_config.dart';
 
 class NotificationService {
-  static const MethodChannel _channel = MethodChannel('com.chaimates/native');
+  // Use brand-specific channel to avoid conflicts when multiple brand apps are installed
+  static MethodChannel get _channel => MethodChannel('${FlavorConfig.instance.brandConfig.packageName}/native');
 
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   final ProviderContainer container;
@@ -58,27 +57,23 @@ class NotificationService {
   }
 
   Future<void> _registerFCMToken() async {
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token != null) await _sendTokenToBackend(token);
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) await _sendTokenToBackend(token);
+    } catch (e) {
+      // Handle gracefully when running on iOS simulator (no APNS support)
+      debugPrint("⚠️ Could not get FCM token (this is normal on iOS simulator): $e");
+    }
   }
 
   
 
   Future<void> _sendTokenToBackend(String token) async {
-    dynamic response;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final authToken = prefs.getString("auth_token");
-
-      if (authToken == null) return;
-
-      response = await http.post(
-        Uri.parse('$BASE_URL/api/update-fcm-token/'),
-        headers: {
-          'Authorization': 'Token $authToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'fcm_token': token}),
+      final apiService = ApiService();
+      await apiService.post(
+        '/api/update-fcm-token/',
+        data: {'fcm_token': token},
       );
     } catch (e) {
       debugPrint("Failed to send FCM token: $e");
@@ -135,18 +130,10 @@ class NotificationService {
 
   static Future<void> clearTokenFromBackend() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final authToken = prefs.getString("auth_token");
-
-      if (authToken == null) return;
-
-      await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/update-fcm-token/'),
-        headers: {
-          'Authorization': 'Token $authToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'fcm_token': null}),
+      final apiService = ApiService();
+      await apiService.post(
+        '/api/update-fcm-token/',
+        data: {'fcm_token': null},
       );
     } catch (e) {
       debugPrint("❌ Failed to clear FCM token: $e");

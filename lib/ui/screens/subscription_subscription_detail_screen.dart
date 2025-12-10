@@ -46,7 +46,7 @@ class _DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = const Color(0xFF54A079);
+    final accent = theme.primaryColor;
     final deliveredRatio =
         detail.totalUnits > 0 ? detail.unitsDelivered / detail.totalUnits : 0.0;
     return SingleChildScrollView(
@@ -211,11 +211,53 @@ class _DetailBody extends StatelessWidget {
           //   ),
           // ],
           const SizedBox(height: 16),
-          _DetailInfoCard(
-            title: 'Delivery schedule',
-            children: detail.days.isEmpty
-                ? const [Text('No deliveries scheduled yet.')]
-                : detail.days.map((day) => _DeliveryDayTile(day: day)).toList(),
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: detail.days.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delivery schedule',
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text('No deliveries scheduled yet.'),
+                      ],
+                    ),
+                  )
+                : ExpansionTile(
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delivery schedule',
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${detail.days.length} Days',
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                    initiallyExpanded: false,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Column(
+                          children: detail.days
+                              .map((day) => _DeliveryDayTile(day: day))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
 
           const SizedBox(height: 24),
@@ -233,36 +275,7 @@ class _DetailBody extends StatelessWidget {
     );
   }
 }
-class _DetailInfoCard extends StatelessWidget {
-  const _DetailInfoCard({required this.title, required this.children});
-  final String title;
-  final List<Widget> children;
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            if (children.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              ...children,
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
+
 class _DeliveryDayTile extends StatelessWidget {
   const _DeliveryDayTile({required this.day});
   final SubscriptionDeliveryDay day;
@@ -604,13 +617,25 @@ class _SubscriptionActionButtonsState extends State<_SubscriptionActionButtons> 
 
     if (reason == null || !mounted) return;
 
+    // Validate reason is not empty
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please provide a reason'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       await SubscriptionService.updateSubscriptionStatus(
         subscriptionId: widget.subscriptionId,
         status: newStatus,
-        reason: reason.isNotEmpty ? reason : null,
+        reason: trimmedReason,
       );
 
       if (!mounted) return;
@@ -627,9 +652,15 @@ class _SubscriptionActionButtonsState extends State<_SubscriptionActionButtons> 
     } catch (e) {
       if (!mounted) return;
 
+      String errorMessage = e.toString();
+      // Remove "Exception: " prefix if present
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring('Exception: '.length);
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to $actionLabel: $e'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
         ),
       );
@@ -686,7 +717,7 @@ class _SubscriptionActionButtonsState extends State<_SubscriptionActionButtons> 
               child: OutlinedButton.icon(
                 onPressed: _isLoading
                     ? null
-                    : () => _handleStatusChange('suspended', 'Suspend'),
+                    : () => _handleStatusChange('Paused', 'Suspend'),
                 icon: const Icon(Icons.pause_circle_outline),
                 label: const Text('Suspend Subscription'),
                 style: OutlinedButton.styleFrom(

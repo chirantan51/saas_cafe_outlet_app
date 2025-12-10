@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 //import 'package:fluttertoast/fluttertoast.dart';
 import 'verify_otp_screen.dart';
-import '../../constants.dart'; // Import the constants
+import '../../core/api_service.dart'; // Use ApiService for brand-aware requests
+import '../../config/flavor_config.dart';
 
 
 class GenerateOtpScreen extends StatelessWidget {
@@ -30,12 +30,21 @@ class GenerateOtpScreen extends StatelessWidget {
     _isLoading.value = true; // ✅ Show loading state
 
     try {
-      final response = await http.post(
-        Uri.parse("$BASE_URL/api/otp/outlets/register/"),
-        body: {"mobile": mobile}, // Send form-data
+      // Use ApiService which automatically adds X-Brand-Id header
+      final apiService = ApiService();
+      final response = await apiService.post(
+        "/api/otp/outlets/register/",
+        data: {"mobile": mobile},
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
       );
 
-      final data = json.decode(response.body);
+      // Debug logging
+      print('🔍 OTP API Response Status: ${response.statusCode}');
+      print('🔍 OTP API Response Body: ${response.data}');
+
+      final data = response.data;
 
       if (data["success"] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -62,9 +71,20 @@ class GenerateOtpScreen extends StatelessWidget {
         //Fluttertoast.showToast(msg: data["message"] ?? "Failed to send OTP");
       }
     } catch (e) {
+      print('🔍 OTP API Error: $e');
+      String errorMessage = 'Failed to send OTP';
+
+      if (e is DioException) {
+        errorMessage = e.response?.data?['message']?.toString() ??
+                      e.message ??
+                      'Network error';
+      } else {
+        errorMessage = e.toString();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString()}'),
+          content: Text('Error: $errorMessage'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -108,20 +128,20 @@ class GenerateOtpScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // App Logo
-                  const Icon(
-                    Icons.coffee,
-                    size: 50,
-                    color: Color(0xFF54A079),
+                  Image.asset(
+                    FlavorConfig.instance.brandConfig.logoAssetPath,
+                    height: 80,
+                    width: 80,
                   ),
                   const SizedBox(height: 10),
 
                   // Title
-                  const Text(
-                    "Chaimates Outlet",
+                  Text(
+                    FlavorConfig.instance.brandConfig.brandName,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F1B20),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -167,7 +187,7 @@ class GenerateOtpScreen extends StatelessWidget {
                         return ElevatedButton(
                           onPressed: isLoading ? null : () => _generateOtp(context), // Disable when loading
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF54A079),
+                            backgroundColor: Theme.of(context).primaryColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),

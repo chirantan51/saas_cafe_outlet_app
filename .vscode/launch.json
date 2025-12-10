@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Chaimates",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--flavor",
+        "chaimates",
+        "--dart-define=FLAVOR=chaimates"
+      ]
+    },
+    {
+      "name": "Debug JD's Kitchen",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--flavor",
+        "jds_kitchen",
+        "--dart-define=FLAVOR=jds_kitchen"
+      ]
+    }
+  ]
+}

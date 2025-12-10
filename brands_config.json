@@ -1,0 +1,29 @@
+{
+  "brands": [
+    {
+      "id": "chaimates",
+      "name": "Chaimates Outlet",
+      "brandId": "38a88abac48411f09212ea148faff773",
+      "packageName": "com.saas_outlet_app.chaimates",
+      "bundleId": "com.saas-outlet-app.chaimates",
+      "primaryColor": "#54A079",
+      "secondaryColor": "#1F1B20",
+      "active": true
+    },
+    {
+      "id": "jds_kitchen",
+      "name": "JD's Kitchen",
+      "brandId": "38a8915ec48411f09212ea148faff773",
+      "packageName": "com.saas_outlet_app.jds_kitchen",
+      "bundleId": "com.saas-outlet-app.jds-kitchen",
+      "primaryColor": "#144c9f",
+      "secondaryColor": "#040205",
+      "active": true
+    }
+  ],
+  "config": {
+    "baseUrl": "http://139.59.86.36:8000",
+    "assetCdnUrl": null,
+    "enableDynamicAssets": false
+  }
+}

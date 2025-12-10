@@ -1,9 +1,6 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../constants.dart';
+import '../core/api_service.dart';
 
 class DeliveryConfig {
   final double deliveryRadiusKm;
@@ -211,56 +208,51 @@ class DeliveryGeoFence {
 }
 
 class OutletService {
-  static Future<String?> _authToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
-
   static Future<DeliveryConfig> fetchDeliveryConfig(
       {required String outletId}) async {
-    final token = await _authToken();
-    if (token == null) {
-      throw Exception('Missing auth token');
+    try {
+      final apiService = ApiService();
+      final response = await apiService.get(
+        "/api/outlets/$outletId/",
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load delivery configuration');
+      }
+
+      final decoded = response.data as Map<String, dynamic>;
+      return DeliveryConfig.fromJson(decoded);
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(
+          'Failed to fetch delivery config: ${e.response?.statusCode} ${e.message}',
+        );
+      }
+      rethrow;
     }
-
-    final response = await http.get(
-      //Uri.parse('$BASE_URL/api/outlets/$outletId/delivery-config/'),
-      Uri.parse('$BASE_URL/api/outlets/$outletId/'),
-      headers: {
-        'Authorization': 'Token $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load delivery configuration');
-    }
-
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    return DeliveryConfig.fromJson(decoded);
   }
 
   static Future<void> updateDeliveryConfig({
     required String outletId,
     required DeliveryConfig config,
   }) async {
-    final token = await _authToken();
-    if (token == null) {
-      throw Exception('Missing auth token');
-    }
+    try {
+      final apiService = ApiService();
+      final response = await apiService.patch(
+        "/api/outlets/$outletId/",
+        data: config.toJson(),
+      );
 
-    final response = await http.patch(
-      //Uri.parse('$BASE_URL/api/outlets/$outletId/delivery-config/'),
-      Uri.parse('$BASE_URL/api/outlets/$outletId/'),
-      headers: {
-        'Authorization': 'Token $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(config.toJson()),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update delivery configuration');
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update delivery configuration');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(
+          'Failed to update delivery config: ${e.response?.statusCode} ${e.message}',
+        );
+      }
+      rethrow;
     }
   }
 }

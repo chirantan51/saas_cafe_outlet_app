@@ -1,8 +1,7 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../constants.dart';
+
+import '../core/api_service.dart';
 
 class SubscriptionOrderLite {
   final String orderId;
@@ -152,20 +151,24 @@ class SubscriptionDashboard {
 
 final subscriptionDashboardProvider =
     FutureProvider<SubscriptionDashboard>((ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('auth_token');
-  if (token == null) throw Exception('Not authenticated');
-  final resp = await http.get(
-    Uri.parse("$BASE_URL/api/orders/dashboard-orders-subscription/"),
-    headers: {
-      'Authorization': 'Token $token',
-      'Content-Type': 'application/json',
-    },
-  );
-  if (resp.statusCode == 200) {
-    final json = jsonDecode(resp.body) as Map<String, dynamic>;
-    return SubscriptionDashboard.fromJson(json);
-  } else {
-    throw Exception('Failed to load subscription dashboard');
+  try {
+    final apiService = ApiService();
+    final response = await apiService.get(
+      '/api/orders/dashboard-orders-subscription/',
+    );
+
+    if (response.statusCode == 200) {
+      final json = response.data as Map<String, dynamic>;
+      return SubscriptionDashboard.fromJson(json);
+    } else {
+      throw Exception('Failed to load subscription dashboard');
+    }
+  } catch (e) {
+    if (e is DioException) {
+      throw Exception(
+        'Failed to load subscription dashboard: ${e.response?.statusCode} ${e.message}',
+      );
+    }
+    rethrow;
   }
 });

@@ -168,7 +168,7 @@ class _OfferEditorScreenState extends ConsumerState<OfferEditorScreen> {
   }
 
   Widget _buildTypeStep() {
-    const highlight = Color(0xFF54A079);
+    final highlight = Theme.of(context).primaryColor;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -855,7 +855,7 @@ class _ProductSelectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final highlight = const Color(0xFF54A079);
+    final highlight = Theme.of(context).primaryColor;
     return InkWell(
       onTap: onSelect,
       borderRadius: BorderRadius.circular(14),

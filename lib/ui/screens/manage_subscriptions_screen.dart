@@ -4,8 +4,6 @@ import 'package:outlet_app/data/models/subscription_plan.dart';
 import 'package:outlet_app/providers/subscription_plans_provider.dart';
 import 'package:outlet_app/ui/screens/subscription_plan_detail_screen.dart';
 
-const _subscriptionAccentColor = Color(0xFF54A079);
-
 class ManageSubscriptionsScreen extends ConsumerWidget {
   const ManageSubscriptionsScreen({super.key});
 
@@ -21,7 +19,7 @@ class ManageSubscriptionsScreen extends ConsumerWidget {
         },
         icon: const Icon(Icons.add),
         label: const Text('New plan'),
-        backgroundColor: _subscriptionAccentColor,
+        backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 6,
         extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -39,10 +37,10 @@ class ManageSubscriptionsScreen extends ConsumerWidget {
           iconTheme: const IconThemeData(color: Colors.white),
           actionsIconTheme: const IconThemeData(color: Colors.white),
           flexibleSpace: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFF54A079),
+                  theme.primaryColor,
                   Color(0xFF3B7C5F),
                 ],
                 begin: Alignment.topLeft,
@@ -158,7 +156,7 @@ class _SubscriptionPlanListTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _subscriptionAccentColor.withOpacity(0.08)),
+          border: Border.all(color: theme.primaryColor.withOpacity(0.08)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x14000000),
@@ -176,11 +174,11 @@ class _SubscriptionPlanListTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: _subscriptionAccentColor.withOpacity(0.12),
+                  backgroundColor: theme.primaryColor.withOpacity(0.12),
                   child: Text(
                     avatarLabel,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: _subscriptionAccentColor,
+                      color: theme.primaryColor,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -224,16 +222,19 @@ class _SubscriptionPlanListTile extends StatelessWidget {
                 // ),
                 if (mins != null && mins > 0)
                   _StatPill(
+                    context: context,
                     icon: Icons.calendar_month_outlined,
                     label: 'Min ${mins} days',
                   ),
                 if (plan.vegType != null && plan.vegType!.isNotEmpty)
                   _StatPill(
+                    context: context,
                     icon: Icons.restaurant_menu_outlined,
                     label: plan.vegType!,
                   ),
                 if (plan.allowSundays != null)
                   _StatPill(
+                    context: context,
                     icon: plan.allowSundays!
                         ? Icons.wb_sunny
                         : Icons.do_not_disturb_on_outlined,
@@ -248,17 +249,18 @@ class _SubscriptionPlanListTile extends StatelessWidget {
     );
   }
 
-  Widget _StatPill({required IconData icon, required String label}) {
+  Widget _StatPill({required BuildContext context, required IconData icon, required String label}) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: _subscriptionAccentColor.withOpacity(0.08),
+        color: theme.primaryColor.withOpacity(0.08),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: _subscriptionAccentColor),
+          Icon(icon, size: 16, color: theme.primaryColor),
           const SizedBox(width: 6),
           Text(
             label,

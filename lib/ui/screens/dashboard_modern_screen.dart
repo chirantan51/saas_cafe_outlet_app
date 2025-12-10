@@ -171,7 +171,7 @@ class _DashboardModernScreenState extends ConsumerState<DashboardModernScreen> {
         currentIndex: _tabIndex,
         onTap: _handleNavTap,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF54A079),
+        selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.black54,
         items: const [
           BottomNavigationBarItem(
@@ -211,8 +211,8 @@ class _DashboardModernScreenState extends ConsumerState<DashboardModernScreen> {
                 if (outletId != null && outletId.isNotEmpty)
                   IconButton(
                     tooltip: 'Delivery settings',
-                    icon: const Icon(Icons.my_location_outlined,
-                        color: Color(0xFF54A079)),
+                    icon: Icon(Icons.my_location_outlined,
+                        color: Theme.of(context).primaryColor),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -231,7 +231,7 @@ class _DashboardModernScreenState extends ConsumerState<DashboardModernScreen> {
                       value: _isOnline,
                       onChanged: _handleStatusToggle,
                       activeTrackColor:
-                          _colorWithOpacity(const Color(0xFF54A079), .4),
+                          _colorWithOpacity(Theme.of(context).primaryColor, .4),
                       inactiveTrackColor: Colors.black26,
                     ),
                     const SizedBox(width: 16),
@@ -378,7 +378,7 @@ class _StatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: const Color(0xFF54A079)),
+            Icon(icon, color: Theme.of(context).primaryColor),
             const SizedBox(height: 12),
             Text(title,
                 style: const TextStyle(fontSize: 12, color: Colors.black54)),
@@ -407,7 +407,7 @@ class _ShortcutsGrid extends StatelessWidget {
       _ShortcutTile(
         label: 'Add Product',
         icon: Icons.add_box_outlined,
-        color: const Color(0xFF54A079),
+        color: Theme.of(context).primaryColor,
         onTap: () => onTap(ShortcutAction.addProduct),
       ),
       _ShortcutTile(
@@ -644,9 +644,9 @@ class _RecentOrderTile extends StatelessWidget {
             children: [
               Chip(
                 label: Text('₹${order.netTotal.toStringAsFixed(0)}'),
-                backgroundColor: _colorWithOpacity(const Color(0xFF54A079), .1),
-                labelStyle: const TextStyle(
-                    color: Color(0xFF54A079), fontWeight: FontWeight.w600),
+                backgroundColor: _colorWithOpacity(Theme.of(context).primaryColor, .1),
+                labelStyle: TextStyle(
+                    color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 8),
               Text(order.orderType ?? 'OnDemand',
@@ -665,7 +665,7 @@ class _RecentOrderTile extends StatelessWidget {
                 ElevatedButton(
                   onPressed: busy ? null : onAccept,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF54A079),
+                    backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Accept'),
@@ -753,9 +753,9 @@ class _SubscriptionSnapshot extends StatelessWidget {
                             return Chip(
                               label: Text(slot.label),
                               backgroundColor: _colorWithOpacity(
-                                  const Color(0xFF54A079), .08),
-                              labelStyle: const TextStyle(
-                                  fontSize: 12, color: Color(0xFF54A079)),
+                                  Theme.of(context).primaryColor, .08),
+                              labelStyle: TextStyle(
+                                  fontSize: 12, color: Theme.of(context).primaryColor),
                             );
                           }).toList(),
                         ),
@@ -933,8 +933,8 @@ class _ReportTile extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundColor: _colorWithOpacity(const Color(0xFF54A079), .12),
-          child: Icon(icon, color: const Color(0xFF54A079)),
+          backgroundColor: _colorWithOpacity(Theme.of(context).primaryColor, .12),
+          child: Icon(icon, color: Theme.of(context).primaryColor),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -977,8 +977,8 @@ class _MetricTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: _colorWithOpacity(const Color(0xFF54A079), .12),
-            child: Icon(icon, color: const Color(0xFF54A079)),
+            backgroundColor: _colorWithOpacity(Theme.of(context).primaryColor, .12),
+            child: Icon(icon, color: Theme.of(context).primaryColor),
           ),
           const SizedBox(width: 12),
           Column(
@@ -1098,7 +1098,7 @@ class _DrawerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF54A079)),
+      leading: Icon(icon, color: Theme.of(context).primaryColor),
       title: Text(label),
       onTap: onTap,
     );

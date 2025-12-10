@@ -6,8 +6,6 @@ import 'package:outlet_app/providers/customer_provider.dart';
 import 'package:outlet_app/ui/screens/customer_create_screen.dart';
 import 'package:outlet_app/utils/navigation_helpers.dart';
 
-const _customerAccentColor = Color(0xFF54A079);
-
 class CustomerManagementScreen extends ConsumerStatefulWidget {
   const CustomerManagementScreen({super.key});
 
@@ -314,7 +312,7 @@ class _CustomerExpandableTile extends ConsumerWidget {
     }
     switch (customer.subscriptionStatus.toLowerCase()) {
       case 'active':
-        return const Color(0xFF54A079);
+        return Theme.of(context).primaryColor;
       case 'pending':
         return Colors.orangeAccent;
       default:
@@ -429,6 +427,7 @@ class _CustomerDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final _customerAccentColor = theme.primaryColor;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -576,7 +575,7 @@ class _CustomerDetailBody extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.receipt_long_outlined,
+                        Icon(Icons.receipt_long_outlined,
                             size: 18, color: _customerAccentColor),
                         const SizedBox(width: 6),
                         Flexible(
@@ -599,7 +598,7 @@ class _CustomerDetailBody extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.payments_outlined,
+                        Icon(Icons.payments_outlined,
                             size: 18, color: _customerAccentColor),
                         const SizedBox(width: 6),
                         Flexible(
@@ -865,7 +864,7 @@ class _ContactChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = verified ? const Color(0xFF1E3A2F) : Colors.orange;
-    final badgeColor = verified ? const Color(0xFF54A079) : Colors.orangeAccent;
+    final badgeColor = verified ? Theme.of(context).primaryColor : Colors.orangeAccent;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

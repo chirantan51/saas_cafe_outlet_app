@@ -49,7 +49,7 @@ class CreateSubscriptionDetailScreen extends StatelessWidget {
         final value = tier.flatOff!;
         final formatted =
             value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
-        return '₹$formatted off';
+        return '₹$formatted off/day';
       }
       return null;
     }

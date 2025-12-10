@@ -6,8 +6,6 @@ import 'package:outlet_app/providers/menu_provider.dart';
 import 'package:outlet_app/providers/subscription_plans_provider.dart';
 import 'package:outlet_app/services/subscription_service.dart';
 
-const _subscriptionAccentColor = Color(0xFF54A079);
-
 class CreateSubscriptionPlanScreen extends ConsumerStatefulWidget {
   const CreateSubscriptionPlanScreen({
     super.key,
@@ -146,6 +144,14 @@ class _CreateSubscriptionPlanScreenState
               ? 'Edit subscription plan'
               : 'Create subscription plan',
         ),
+        actions: [
+          if (widget.isEditMode && widget.initialPlan != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete plan',
+              onPressed: _isSubmitting ? null : () => _showDeleteConfirmation(context),
+            ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: SizedBox(
@@ -350,18 +356,18 @@ class _CreateSubscriptionPlanScreenState
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color:
-                                      _subscriptionAccentColor.withOpacity(0.12),
+                                      Theme.of(context).primaryColor.withOpacity(0.12),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   CircleAvatar(
                                     radius: 18,
-                                    backgroundColor: _subscriptionAccentColor
+                                    backgroundColor: Theme.of(context).primaryColor
                                         .withOpacity(0.12),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.wb_sunny_outlined,
-                                      color: _subscriptionAccentColor,
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -376,7 +382,7 @@ class _CreateSubscriptionPlanScreenState
                                   ),
                                   Switch.adaptive(
                                     value: _allowSundays,
-                                    activeColor: _subscriptionAccentColor,
+                                    activeColor: Theme.of(context).primaryColor,
                                     onChanged: (value) => setState(
                                       () => _allowSundays = value,
                                     ),
@@ -469,10 +475,10 @@ class _CreateSubscriptionPlanScreenState
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: _subscriptionAccentColor
+                                    color: Theme.of(context).primaryColor
                                         .withOpacity(0.16),
                                   ),
-                                  color: _subscriptionAccentColor
+                                  color: Theme.of(context).primaryColor
                                       .withOpacity(0.06),
                                 ),
                                 child: Text(
@@ -510,9 +516,9 @@ class _CreateSubscriptionPlanScreenState
                                 icon: const Icon(Icons.add_circle_outline),
                                 label: const Text('Add tier'),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: _subscriptionAccentColor,
+                                  foregroundColor: Theme.of(context).primaryColor,
                                   side: BorderSide(
-                                    color: _subscriptionAccentColor
+                                    color: Theme.of(context).primaryColor
                                         .withOpacity(0.4),
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -548,10 +554,10 @@ class _CreateSubscriptionPlanScreenState
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: _subscriptionAccentColor
+                                    color: Theme.of(context).primaryColor
                                         .withOpacity(0.16),
                                   ),
-                                  color: _subscriptionAccentColor
+                                  color: Theme.of(context).primaryColor
                                       .withOpacity(0.06),
                                 ),
                                 child: Text(
@@ -572,14 +578,14 @@ class _CreateSubscriptionPlanScreenState
                                       label: Text(
                                         DateFormat('d MMM yyyy').format(date),
                                       ),
-                                      backgroundColor: _subscriptionAccentColor
+                                      backgroundColor: Theme.of(context).primaryColor
                                           .withOpacity(0.12),
                                       labelStyle:
                                           theme.textTheme.bodySmall?.copyWith(
                                         color: const Color(0xFF1E3A2F),
                                         fontWeight: FontWeight.w600,
                                       ),
-                                      deleteIconColor: _subscriptionAccentColor,
+                                      deleteIconColor: Theme.of(context).primaryColor,
                                       onDeleted: () {
                                         setState(() {
                                           _holidayDates.remove(date);
@@ -593,7 +599,7 @@ class _CreateSubscriptionPlanScreenState
                               spacing: 12,
                               children: [
                                 ActionChip(
-                                  backgroundColor: _subscriptionAccentColor,
+                                  backgroundColor: Theme.of(context).primaryColor,
                                   avatar: const Icon(
                                     Icons.add,
                                     color: Colors.white,
@@ -610,17 +616,17 @@ class _CreateSubscriptionPlanScreenState
                                 if (_holidayDates.isNotEmpty)
                                   ActionChip(
                                     backgroundColor:
-                                        _subscriptionAccentColor.withOpacity(
+                                        Theme.of(context).primaryColor.withOpacity(
                                       0.12,
                                     ),
-                                    avatar: const Icon(
+                                    avatar: Icon(
                                       Icons.delete_sweep_outlined,
-                                      color: _subscriptionAccentColor,
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                     label: Text(
                                       'Clear all (${_holidayDates.length})',
                                       style: theme.textTheme.bodySmall?.copyWith(
-                                        color: _subscriptionAccentColor,
+                                        color: Theme.of(context).primaryColor,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -707,10 +713,10 @@ class _CreateSubscriptionPlanScreenState
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: _subscriptionAccentColor.withOpacity(0.12),
-                    child: const Icon(
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
+                    child: Icon(
                       Icons.percent,
-                      color: _subscriptionAccentColor,
+                      color: Theme.of(context).primaryColor,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -822,7 +828,7 @@ class _CreateSubscriptionPlanScreenState
                   icon: const Icon(Icons.save_outlined),
                   label: const Text('Save'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _subscriptionAccentColor,
+                    backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 18, vertical: 12),
@@ -921,6 +927,143 @@ class _CreateSubscriptionPlanScreenState
                 ? 'Failed to update plan: $e'
                 : 'Failed to create plan: $e',
           ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final productName = widget.initialPlan?.product?.name ?? 'this plan';
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: theme.colorScheme.error.withOpacity(0.12),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: theme.colorScheme.error,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Delete Plan?',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to delete the subscription plan for "$productName"?',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.error.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: theme.colorScheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This action cannot be undone. All associated data will be permanently removed.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Delete'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && widget.initialPlan != null) {
+      await _handleDelete(context);
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context) async {
+    setState(() => _isSubmitting = true);
+    try {
+      await SubscriptionService.deletePlan(widget.initialPlan!.id);
+
+      ref.invalidate(subscriptionPlansProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Subscription plan deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      String errorMessage = e.toString();
+      // Remove "Exception: " prefix if present
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring('Exception: '.length);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     } finally {
@@ -1044,7 +1187,7 @@ class _ThemedSectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _subscriptionAccentColor.withOpacity(0.08),
+          color: Theme.of(context).primaryColor.withOpacity(0.08),
         ),
         boxShadow: const [
           BoxShadow(
@@ -1062,10 +1205,10 @@ class _ThemedSectionCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: _subscriptionAccentColor.withOpacity(0.12),
+                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
                 child: Icon(
                   icon,
-                  color: _subscriptionAccentColor,
+                  color: Theme.of(context).primaryColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1189,7 +1332,7 @@ class _DiscountTierTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _subscriptionAccentColor.withOpacity(0.14),
+          color: Theme.of(context).primaryColor.withOpacity(0.14),
         ),
         boxShadow: const [
           BoxShadow(
@@ -1204,10 +1347,10 @@ class _DiscountTierTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: _subscriptionAccentColor.withOpacity(0.12),
-            child: const Icon(
+            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
+            child: Icon(
               Icons.percent,
-              color: _subscriptionAccentColor,
+              color: Theme.of(context).primaryColor,
             ),
           ),
           const SizedBox(width: 12),
@@ -1268,13 +1411,13 @@ class _SubscribedTag extends StatelessWidget {
       margin: const EdgeInsets.only(left: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: _subscriptionAccentColor.withOpacity(0.12),
+        color: Theme.of(context).primaryColor.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         'Subscribed',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: _subscriptionAccentColor,
+              color: Theme.of(context).primaryColor,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,
             ),
@@ -1297,16 +1440,16 @@ class _VegTypeSelector extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: [
-        _buildTile(theme, 'Veg', Icons.eco_outlined),
+        _buildTile(theme, context, 'Veg', Icons.eco_outlined),
         const SizedBox(height: 10),
-        _buildTile(theme, 'Non-Veg', Icons.restaurant_outlined),
+        _buildTile(theme, context, 'Non-Veg', Icons.restaurant_outlined),
         const SizedBox(height: 10),
-        _buildTile(theme, 'Egg', Icons.egg_alt_outlined),
+        _buildTile(theme, context, 'Egg', Icons.egg_alt_outlined),
       ],
     );
   }
 
-  Widget _buildTile(ThemeData theme, String label, IconData icon) {
+  Widget _buildTile(ThemeData theme, BuildContext context, String label, IconData icon) {
     final isSelected = currentValue == label;
     return InkWell(
       onTap: () => onChanged(label),
@@ -1320,8 +1463,8 @@ class _VegTypeSelector extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? _subscriptionAccentColor
-                : _subscriptionAccentColor.withOpacity(0.12),
+                ? Theme.of(context).primaryColor
+                : Theme.of(context).primaryColor.withOpacity(0.12),
             width: isSelected ? 1.6 : 1,
           ),
           boxShadow: const [
@@ -1336,11 +1479,11 @@ class _VegTypeSelector extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: _subscriptionAccentColor
+              backgroundColor: Theme.of(context).primaryColor
                   .withOpacity(isSelected ? 0.2 : 0.12),
               child: Icon(
                 icon,
-                color: _subscriptionAccentColor,
+                color: Theme.of(context).primaryColor,
               ),
             ),
             const SizedBox(width: 12),
@@ -1356,7 +1499,7 @@ class _VegTypeSelector extends StatelessWidget {
             Icon(
               isSelected ? Icons.check_circle : Icons.circle_outlined,
               color: isSelected
-                  ? _subscriptionAccentColor
+                  ? Theme.of(context).primaryColor
                   : Colors.black26,
             ),
           ],

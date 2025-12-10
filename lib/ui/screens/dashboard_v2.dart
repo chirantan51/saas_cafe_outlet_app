@@ -73,7 +73,7 @@ class _DashboardV2ScreenState extends ConsumerState<DashboardV2Screen> {
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF54A079),
+          selectedItemColor: Theme.of(context).primaryColor,
           unselectedItemColor: Colors.black54,
           onTap: (idx) async {
             setState(() => _selectedIndex = idx);
@@ -136,7 +136,7 @@ class _DashboardV2ScreenState extends ConsumerState<DashboardV2Screen> {
                     indicatorSize: TabBarIndicatorSize.tab,
                     indicatorPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                     indicator: BoxDecoration(
-                      color: Color(0xFF54A079),
+                      color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.all(Radius.circular(16)),
                     ),
                     tabs: [
@@ -187,10 +187,10 @@ class _HeroBarState extends State<_HeroBar> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Text(
+        Text(
           'Chaiamates',
           style: TextStyle(
-            color: Color(0xFF54A079),
+            color: Theme.of(context).primaryColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -201,7 +201,7 @@ class _HeroBarState extends State<_HeroBar> {
           child: Switch(
             value: open,
             onChanged: (v) => setState(() => open = v),
-            activeColor: const Color(0xFF54A079),
+            activeColor: Theme.of(context).primaryColor,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
@@ -338,7 +338,7 @@ class _Action extends StatelessWidget {
           FloatingActionButton(
               mini: true,
               onPressed: onTap,
-              backgroundColor: const Color(0xFF54A079),
+              backgroundColor: Theme.of(context).primaryColor,
               child: Icon(icon)),
           const SizedBox(height: 6),
           Text(label, style: const TextStyle(fontSize: 12)),
@@ -368,9 +368,9 @@ class _KpiCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-                color: const Color(0x1A54A079),
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8)),
-            child: Icon(kpi.icon, color: const Color(0xFF54A079)),
+            child: Icon(kpi.icon, color: Theme.of(context).primaryColor),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -431,7 +431,7 @@ class _OrderTile extends StatelessWidget {
               runSpacing: 4,
               children: [
                 if ((order.orderType ?? 'OnDemand') == 'Subscription')
-                  _TypeChip(label: 'Subscription', color: const Color(0xFF54A079)),
+                  _TypeChip(label: 'Subscription', color: Theme.of(context).primaryColor),
                 if ((order.orderType ?? 'OnDemand') == 'Scheduled')
                   _TypeChip(label: 'Scheduled', color: Colors.blue),
                 if (hasOnTimeInfo && delayDelta != null)

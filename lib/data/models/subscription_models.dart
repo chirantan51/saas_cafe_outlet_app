@@ -73,6 +73,133 @@ class SubscriptionQuote {
   );
 }
 
+/// New subscription quote response from POST /api/subscriptions/quote/
+class SubscriptionQuoteResponse {
+  final String productId;
+  final String outletId;
+  final String currency;
+  final int baseUnitPaise;
+  final QuoteSummary summary;
+  final List<QuotePerDay> perDay;
+  final List<String> notes;
+
+  const SubscriptionQuoteResponse({
+    required this.productId,
+    required this.outletId,
+    required this.currency,
+    required this.baseUnitPaise,
+    required this.summary,
+    required this.perDay,
+    required this.notes,
+  });
+
+  factory SubscriptionQuoteResponse.fromJson(Map<String, dynamic> json) {
+    return SubscriptionQuoteResponse(
+      productId: json['product_id'] as String? ?? '',
+      outletId: json['outlet_id'] as String? ?? '',
+      currency: json['currency'] as String? ?? 'INR',
+      baseUnitPaise: json['base_unit_paise'] as int? ?? 0,
+      summary: QuoteSummary.fromJson(
+          json['summary'] as Map<String, dynamic>? ?? {}),
+      perDay: (json['per_day'] as List<dynamic>?)
+              ?.map((e) => QuotePerDay.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      notes: (json['notes'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class QuoteSummary {
+  final int totalQty;
+  final int daysCount;
+  final int baseTotalPaise;
+  final int grossTotalPaise;
+  final int discountPaise;
+  final AppliedDiscountTier? appliedDiscountTier;
+  final int netTotalPaise;
+
+  const QuoteSummary({
+    required this.totalQty,
+    required this.daysCount,
+    required this.baseTotalPaise,
+    required this.grossTotalPaise,
+    required this.discountPaise,
+    this.appliedDiscountTier,
+    required this.netTotalPaise,
+  });
+
+  factory QuoteSummary.fromJson(Map<String, dynamic> json) {
+    return QuoteSummary(
+      totalQty: json['total_qty'] as int? ?? 0,
+      daysCount: json['days_count'] as int? ?? 0,
+      baseTotalPaise: json['base_total_paise'] as int? ?? 0,
+      grossTotalPaise: json['gross_total_paise'] as int? ?? 0,
+      discountPaise: json['discount_paise'] as int? ?? 0,
+      appliedDiscountTier: json['applied_discount_tier'] != null
+          ? AppliedDiscountTier.fromJson(
+              json['applied_discount_tier'] as Map<String, dynamic>)
+          : null,
+      netTotalPaise: json['net_total_paise'] as int? ?? 0,
+    );
+  }
+}
+
+class QuotePerDay {
+  final String date;
+  final int qty;
+  final String slotStart;
+  final String slotEnd;
+  final String slotLabel;
+  final int pricePaise;
+
+  const QuotePerDay({
+    required this.date,
+    required this.qty,
+    required this.slotStart,
+    required this.slotEnd,
+    required this.slotLabel,
+    required this.pricePaise,
+  });
+
+  factory QuotePerDay.fromJson(Map<String, dynamic> json) {
+    return QuotePerDay(
+      date: json['date'] as String? ?? '',
+      qty: json['qty'] as int? ?? 0,
+      slotStart: json['slot_start'] as String? ?? '',
+      slotEnd: json['slot_end'] as String? ?? '',
+      slotLabel: json['slot_label'] as String? ?? '',
+      pricePaise: json['price_paise'] as int? ?? 0,
+    );
+  }
+}
+
+class AppliedDiscountTier {
+  final int minDays;
+  final String discountType;
+  final String value;
+  final String label;
+
+  const AppliedDiscountTier({
+    required this.minDays,
+    required this.discountType,
+    required this.value,
+    required this.label,
+  });
+
+  factory AppliedDiscountTier.fromJson(Map<String, dynamic> json) {
+    return AppliedDiscountTier(
+      minDays: json['min_days'] as int? ?? 0,
+      discountType: json['discount_type'] as String? ?? '',
+      value: json['value'] as String? ?? '0',
+      label: json['label'] as String? ?? '',
+    );
+  }
+}
+
 /// Slot option sent from server in `sub_config.available_slots`.
 class SlotOption {
   final String slotStart; // ISO8601

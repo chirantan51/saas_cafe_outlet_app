@@ -212,12 +212,16 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   }
 
   Future<void> _loadCustomers() async {
+    if (!mounted) return;
+
     setState(() {
       _customersLoading = true;
       _customersError = null;
     });
     try {
       final page = await CustomerService.fetchCustomers(page: 1);
+      if (!mounted) return;
+
       setState(() {
         _customers = page.results;
         _selectedCustomer = widget.order != null
@@ -228,10 +232,14 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
         }
       });
     } catch (error) {
+      if (!mounted) return;
+
       setState(() {
         _customersError = error.toString();
       });
-    } finally {
+    }
+
+    if (mounted) {
       setState(() => _customersLoading = false);
     }
   }
@@ -536,6 +544,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     if (customer == null ||
         _orderItems.isEmpty ||
         (isDelivery && !hasAddress)) {
+      if (!mounted) return;
       setState(() {
         _quote = null;
         _quoteError = null;
@@ -547,6 +556,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     final itemsPayload = _buildItemsPayload();
     final comments = _orderCommentController.text.trim();
 
+    if (!mounted) return;
     setState(() {
       _quoteLoading = true;
       _quoteError = null;
@@ -855,6 +865,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     final itemsPayload = _buildItemsPayload();
     final comments = _orderCommentController.text.trim();
 
+    if (!mounted) return;
     setState(() => _isSubmitting = true);
     try {
       if (_isEditMode) {
@@ -1248,9 +1259,9 @@ class _CustomerSelectionStep extends StatelessWidget {
                                     ),
                                   ),
                                   if (isSelected)
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle,
-                                      color: Color(0xFF54A079),
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                 ],
                               ),
@@ -1833,6 +1844,7 @@ class _ItemsStepState extends State<_ItemsStep> {
     Map<String, dynamic>? selected;
     Map<String, dynamic>? selectedVariant;
     int quantity = 1;
+    bool showCustomizationField = false;
 
     final result = await showDialog<_ProductSelectionResult>(
       context: context,
@@ -1868,10 +1880,14 @@ class _ItemsStepState extends State<_ItemsStep> {
                             description.contains(query);
                       }).toList();
 
-                final selectedVariants = _variantsOf(selected);
+                final selectedVariants = List<Map<String, dynamic>>.from(
+                  _variantsOf(selected),
+                )..sort((a, b) {
+                    final priceA = _parsePrice(a['price']) ?? 0.0;
+                    final priceB = _parsePrice(b['price']) ?? 0.0;
+                    return priceA.compareTo(priceB);
+                  });
                 final requiresVariantSelection = selectedVariants.isNotEmpty;
-                final showCustomization = _isCustomizable(selected) ||
-                    customizationController.text.trim().isNotEmpty;
                 String variantIdentifier(Map<String, dynamic> variant) {
                   return variant['variant_id']?.toString() ??
                       variant['id']?.toString() ??
@@ -1883,262 +1899,248 @@ class _ItemsStepState extends State<_ItemsStep> {
                 final currentVariantId = selectedVariant == null
                     ? null
                     : variantIdentifier(selectedVariant!);
-                final selectedUnitPrice = selectedVariant != null
-                    ? _parsePrice(selectedVariant?['price'])
-                    : _parsePrice(selected?['price']);
 
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Add product',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: searchController,
-                                decoration: const InputDecoration(
-                                  prefixIcon: Icon(Icons.search),
-                                  hintText:
-                                      'Search products by name or description',
-                                ),
-                                onChanged: (_) => setModalState(() {}),
-                              ),
-                              const SizedBox(height: 12),
-                              Material(
-                                color: Colors.transparent,
-                                child: filtered.isEmpty
-                                    ? const _EmptyState(
-                                        icon: Icons.search_off_outlined,
-                                        message:
-                                            'No products match your search.',
-                                      )
-                                    : ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          minHeight: 120,
-                                          maxHeight: 220,
-                                        ),
-                                        child: ListView.separated(
-                                          shrinkWrap: true,
-                                          itemCount: filtered.length,
-                                          separatorBuilder: (_, __) =>
-                                              const Divider(height: 0),
-                                          itemBuilder: (context, index) {
-                                            final product = filtered[index];
-                                            final productId =
-                                                product['id']?.toString() ?? '';
-                                            final isSelected = selected !=
-                                                    null &&
-                                                selected!['id']?.toString() ==
-                                                    productId;
-                                            final price = product['price'];
-                                            final subtitleParts = <String>[];
-                                            if (price != null) {
-                                              final priceStr = price is num
-                                                  ? price.toStringAsFixed(2)
-                                                  : price.toString();
-                                              subtitleParts.add('₹$priceStr');
-                                            }
-                                            final size =
-                                                product['size']?.toString();
-                                            if (size != null &&
-                                                size.trim().isNotEmpty) {
-                                              subtitleParts.add(size.trim());
-                                            }
-                                            return ListTile(
-                                              selected: isSelected,
-                                              selectedTileColor:
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                      .withOpacity(0.08),
-                                              title: Text(
-                                                product['name']?.toString() ??
-                                                    'Product',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyLarge
-                                                    ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w600),
-                                              ),
-                                              subtitle: subtitleParts.isEmpty
-                                                  ? null
-                                                  : Text(subtitleParts
-                                                      .join(' - ')),
-                                              onTap: () {
-                                                FocusManager
-                                                    .instance.primaryFocus
-                                                    ?.unfocus();
-                                                setModalState(() {
-                                                  selected = product;
-                                                  quantity = 1;
-                                                  customizationController
-                                                      .clear();
-                                                  final variants =
-                                                      _variantsOf(product);
-                                                  selectedVariant =
-                                                      _firstActiveVariant(
-                                                          variants);
-                                                });
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ),
-                              ),
-                              if (selected != null &&
-                                  selectedVariants.isNotEmpty) ...[
-                                const SizedBox(height: 16),
-                                ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxHeight: 220),
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Choose a variant',
+                final scrollController = ScrollController();
+                final customizationFocus = FocusNode();
+
+                // Add listener to scroll when customization field is focused
+                customizationFocus.addListener(() {
+                  if (customizationFocus.hasFocus) {
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (scrollController.hasClients) {
+                        scrollController.animateTo(
+                          scrollController.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    });
+                  }
+                });
+
+                return SingleChildScrollView(
+                  controller: scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add product',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: searchController,
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.search),
+                            hintText: 'Search products by name or description',
+                          ),
+                          onChanged: (_) => setModalState(() {}),
+                        ),
+                        const SizedBox(height: 12),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: filtered.isEmpty
+                                ? const _EmptyState(
+                                    icon: Icons.search_off_outlined,
+                                    message: 'No products match your search.',
+                                  )
+                                : ListView.separated(
+                                    shrinkWrap: true,
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (_, __) =>
+                                        const Divider(height: 0),
+                                    itemBuilder: (context, index) {
+                                      final product = filtered[index];
+                                      final productId =
+                                          product['id']?.toString() ?? '';
+                                      final isSelected = selected != null &&
+                                          selected!['id']?.toString() ==
+                                              productId;
+                                      final price = product['price'];
+                                      final subtitleParts = <String>[];
+                                      if (price != null) {
+                                        final priceStr = price is num
+                                            ? price.toStringAsFixed(2)
+                                            : price.toString();
+                                        subtitleParts.add('₹$priceStr');
+                                      }
+                                      final size = product['size']?.toString();
+                                      if (size != null &&
+                                          size.trim().isNotEmpty) {
+                                        subtitleParts.add(size.trim());
+                                      }
+                                      return ListTile(
+                                        selected: isSelected,
+                                        selectedTileColor: Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withOpacity(0.08),
+                                        title: Text(
+                                          product['name']?.toString() ??
+                                              'Product',
                                           style: Theme.of(context)
                                               .textTheme
-                                              .bodyMedium
+                                              .bodyLarge
                                               ?.copyWith(
                                                   fontWeight: FontWeight.w600),
                                         ),
-                                        const SizedBox(height: 8),
-                                        ...selectedVariants.map((variant) {
-                                          final variantId =
-                                              variantIdentifier(variant);
-                                          final priceLabel =
-                                              _parsePrice(variant['price'])
-                                                  ?.toStringAsFixed(2);
-                                          final description =
-                                              variant['description']
-                                                  ?.toString();
-                                          final subtitleParts = <String>[];
-                                          if (priceLabel != null) {
-                                            subtitleParts.add('₹$priceLabel');
-                                          }
-                                          if (description != null &&
-                                              description.trim().isNotEmpty) {
-                                            subtitleParts
-                                                .add(description.trim());
-                                          }
-                                          return RadioListTile<String>(
-                                            value: variantId,
-                                            groupValue: currentVariantId,
-                                            title: Text(
-                                              variant['name']?.toString() ??
-                                                  'Variant',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600),
-                                            ),
-                                            subtitle: subtitleParts.isEmpty
-                                                ? null
-                                                : Text(
-                                                    subtitleParts.join(' · ')),
-                                            onChanged: (value) {
-                                              if (value == null) return;
-                                              setModalState(() {
-                                                selectedVariant = variant;
-                                              });
-                                            },
-                                          );
-                                        }),
-                                      ],
-                                    ),
+                                        subtitle: subtitleParts.isEmpty
+                                            ? null
+                                            : Text(subtitleParts.join(' - ')),
+                                        onTap: () {
+                                          FocusManager.instance.primaryFocus
+                                              ?.unfocus();
+                                          setModalState(() {
+                                            selected = product;
+                                            quantity = 1;
+                                            customizationController.clear();
+                                            final variants =
+                                                List<Map<String, dynamic>>.from(
+                                              _variantsOf(product),
+                                            )..sort((a, b) {
+                                                    final priceA = _parsePrice(
+                                                            a['price']) ??
+                                                        0.0;
+                                                    final priceB = _parsePrice(
+                                                            b['price']) ??
+                                                        0.0;
+                                                    return priceA
+                                                        .compareTo(priceB);
+                                                  });
+                                            selectedVariant =
+                                                _firstActiveVariant(variants);
+                                          });
+                                        },
+                                      );
+                                    },
                                   ),
-                                ),
-                              ],
-                              if (selected != null) ...[
-                                const SizedBox(height: 16),
-                                _QuantityRow(
-                                  quantity: quantity,
-                                  onIncrement: () =>
-                                      setModalState(() => quantity += 1),
-                                  onDecrement: () {
-                                    if (quantity > 1) {
-                                      setModalState(() => quantity -= 1);
-                                    }
-                                  },
-                                ),
-                                if (selectedUnitPrice != null) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Unit price: ₹${selectedUnitPrice.toStringAsFixed(2)}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                                if (showCustomization) ...[
-                                  const SizedBox(height: 12),
-                                  TextField(
-                                    controller: customizationController,
-                                    maxLines: 2,
-                                    decoration: const InputDecoration(
-                                      labelText:
-                                          'Customization notes (optional)',
-                                      hintText: 'E.g. No onions, extra spicy',
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                            child: const Text('Cancel'),
+                        if (selected != null &&
+                            selectedVariants.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'Choose a variant',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(width: 12),
-                          FilledButton(
-                            onPressed: selected == null ||
-                                    (requiresVariantSelection &&
-                                        selectedVariant == null)
-                                ? null
-                                : () {
-                                    Navigator.of(dialogContext).pop(
-                                      _ProductSelectionResult(
-                                        product: selected!,
-                                        quantity: quantity,
-                                        customization: customizationController
-                                                .text
-                                                .trim()
-                                                .isEmpty
-                                            ? null
-                                            : customizationController.text
-                                                .trim(),
-                                        variant: selectedVariant,
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 40,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: selectedVariants.map((variant) {
+                                  final variantId = variantIdentifier(variant);
+                                  final isSelected =
+                                      currentVariantId == variantId;
+                                  final priceLabel =
+                                      _parsePrice(variant['price'])
+                                          ?.toStringAsFixed(2);
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        '${variant['name']?.toString() ?? 'Variant'}${priceLabel != null ? ' (₹$priceLabel)' : ''}',
                                       ),
-                                    );
-                                  },
-                            child: const Text('Add item'),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        if (selected) {
+                                          setModalState(() {
+                                            selectedVariant = variant;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    ],
+                        if (selected != null) const SizedBox(height: 16),
+                        if (selected != null)
+                          _QuantityRow(
+                            quantity: quantity,
+                            onIncrement: () =>
+                                setModalState(() => quantity += 1),
+                            onDecrement: () {
+                              if (quantity > 1) {
+                                setModalState(() => quantity -= 1);
+                              }
+                            },
+                          ),
+                        if (selected != null && !showCustomizationField) ...[
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: () {
+                              setModalState(() {
+                                showCustomizationField = true;
+                              });
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Customization'),
+                          ),
+                        ],
+                        if (selected != null && showCustomizationField) ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: customizationController,
+                            focusNode: customizationFocus,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Customization notes (optional)',
+                              hintText: 'E.g. No onions, extra spicy',
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 12),
+                            FilledButton(
+                              onPressed: selected == null ||
+                                      (requiresVariantSelection &&
+                                          selectedVariant == null)
+                                  ? null
+                                  : () {
+                                      Navigator.of(dialogContext).pop(
+                                        _ProductSelectionResult(
+                                          product: selected!,
+                                          quantity: quantity,
+                                          customization: customizationController
+                                                  .text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : customizationController.text
+                                                  .trim(),
+                                          variant: selectedVariant,
+                                        ),
+                                      );
+                                    },
+                              child: const Text('Add item'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -2197,137 +2199,149 @@ class _ItemsStepState extends State<_ItemsStep> {
                 final currentVariantId = selectedVariant == null
                     ? null
                     : variantIdentifier(selectedVariant!);
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Edit ${item.productName}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      if (requiresVariantSelection) ...[
-                        const SizedBox(height: 16),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Choose a variant',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(height: 8),
-                                ...variants.map((variant) {
-                                  final variantId = variantIdentifier(variant);
-                                  final priceLabel =
-                                      _parsePrice(variant['price'])
-                                          ?.toStringAsFixed(2);
-                                  final description =
-                                      variant['description']?.toString();
-                                  final subtitleParts = <String>[];
-                                  if (priceLabel != null) {
-                                    subtitleParts.add('₹$priceLabel');
-                                  }
-                                  if (description != null &&
-                                      description.trim().isNotEmpty) {
-                                    subtitleParts.add(description.trim());
-                                  }
-                                  return RadioListTile<String>(
-                                    value: variantId,
-                                    groupValue: currentVariantId,
-                                    title: Text(
-                                      variant['name']?.toString() ?? 'Variant',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w600),
-                                    ),
-                                    subtitle: subtitleParts.isEmpty
-                                        ? null
-                                        : Text(subtitleParts.join(' · ')),
-                                    onChanged: (value) {
-                                      if (value == null) return;
-                                      setModalState(() {
-                                        selectedVariant = variant;
-                                      });
-                                    },
-                                  );
-                                }),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      _QuantityRow(
-                        quantity: quantity,
-                        onIncrement: () => setModalState(() => quantity += 1),
-                        onDecrement: () => setModalState(() {
-                          if (quantity > 1) quantity -= 1;
-                        }),
-                      ),
-                      if (selectedUnitPrice != null) ...[
-                        const SizedBox(height: 8),
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'Unit price: ₹${selectedUnitPrice.toStringAsFixed(2)}',
+                          'Edit ${item.productName}',
                           style: Theme.of(context)
                               .textTheme
-                              .bodySmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
-                      ],
-                      if (showCustomization) ...[
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: customizationController,
-                          maxLines: 2,
-                          decoration: const InputDecoration(
-                            labelText: 'Customization notes (optional)',
+                        if (requiresVariantSelection) ...[
+                          const SizedBox(height: 16),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 220),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Choose a variant',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ...variants.map((variant) {
+                                        final variantId =
+                                            variantIdentifier(variant);
+                                        final priceLabel =
+                                            _parsePrice(variant['price'])
+                                                ?.toStringAsFixed(2);
+                                        final description =
+                                            variant['description']?.toString();
+                                        final subtitleParts = <String>[];
+                                        if (priceLabel != null) {
+                                          subtitleParts.add('₹$priceLabel');
+                                        }
+                                        if (description != null &&
+                                            description.trim().isNotEmpty) {
+                                          subtitleParts.add(description.trim());
+                                        }
+                                        return RadioListTile<String>(
+                                          value: variantId,
+                                          groupValue: currentVariantId,
+                                          title: Text(
+                                            variant['name']?.toString() ??
+                                                'Variant',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.w600),
+                                          ),
+                                          subtitle: subtitleParts.isEmpty
+                                              ? null
+                                              : Text(subtitleParts.join(' · ')),
+                                          onChanged: (value) {
+                                            if (value == null) return;
+                                            setModalState(() {
+                                              selectedVariant = variant;
+                                            });
+                                          },
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
+                          const SizedBox(height: 16),
+                        ],
+                        _QuantityRow(
+                          quantity: quantity,
+                          onIncrement: () => setModalState(() => quantity += 1),
+                          onDecrement: () => setModalState(() {
+                            if (quantity > 1) quantity -= 1;
+                          }),
                         ),
-                      ],
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 12),
-                          FilledButton(
-                            onPressed: requiresVariantSelection &&
-                                    selectedVariant == null
-                                ? null
-                                : () {
-                                    Navigator.of(dialogContext).pop(
-                                      _ItemEditResult(
-                                        quantity: quantity,
-                                        customization: customizationController
-                                                .text
-                                                .trim()
-                                                .isEmpty
-                                            ? null
-                                            : customizationController.text
-                                                .trim(),
-                                        variant: selectedVariant,
-                                      ),
-                                    );
-                                  },
-                            child: const Text('Save'),
+                        if (selectedUnitPrice != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Unit price: ₹${selectedUnitPrice.toStringAsFixed(2)}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                         ],
-                      ),
-                    ],
+                        if (showCustomization) ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: customizationController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Customization notes (optional)',
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 12),
+                            FilledButton(
+                              onPressed: requiresVariantSelection &&
+                                      selectedVariant == null
+                                  ? null
+                                  : () {
+                                      Navigator.of(dialogContext).pop(
+                                        _ItemEditResult(
+                                          quantity: quantity,
+                                          customization: customizationController
+                                                  .text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : customizationController.text
+                                                  .trim(),
+                                          variant: selectedVariant,
+                                        ),
+                                      );
+                                    },
+                              child: const Text('Save'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -2429,7 +2443,7 @@ class _QuantityRow extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFF54A079)),
+            border: Border.all(color: Theme.of(context).primaryColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -2556,7 +2570,7 @@ class _StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF54A079);
+    final accent = Theme.of(context).primaryColor;
     final muted = const Color(0xFFE5E7EB);
     final theme = Theme.of(context);
 
@@ -2766,7 +2780,7 @@ class _QuantityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = const Color(0xFF54A079);
+    final color = Theme.of(context).primaryColor;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),

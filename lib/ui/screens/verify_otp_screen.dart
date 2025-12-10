@@ -1,13 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
-import '../../constants.dart';
+import '../../core/api_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/device_metadata.dart';
-import 'dashboard_screen.dart';
+import 'dashboard_v3.dart';
 
 class VerifyOtpScreen extends ConsumerWidget {
   final String mobile;
@@ -28,16 +26,26 @@ class VerifyOtpScreen extends ConsumerWidget {
 
     try {
       final metadata = await DeviceMetadata.collect();
-      final response = await http.post(
-        Uri.parse("$BASE_URL/api/otp/outlets/register/"),
-        body: {
+
+      // Use ApiService which automatically adds X-Brand-Id header
+      final apiService = ApiService();
+      final response = await apiService.post(
+        "/api/otp/outlets/register/",
+        data: {
           "mobile": mobile,
           "otp": otp,
           ...metadata.toRequestBody(),
         },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
       );
 
-      final data = jsonDecode(response.body);
+      // Debug logging
+      print('🔍 Verify OTP API Response Status: ${response.statusCode}');
+      print('🔍 Verify OTP API Response Body: ${response.data}');
+
+      final data = response.data;
       _isLoading.value = false;
 
       if (data["success"] == true) {
@@ -46,43 +54,231 @@ class VerifyOtpScreen extends ConsumerWidget {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(builder: (context) => const DashboardV3Screen()),
         );
       } else {
         final message = data["message"]?.toString() ?? "Failed to verify OTP";
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
+      print('🔍 Verify OTP API Error: $e');
       _isLoading.value = false;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Network error, try again.")));
+
+      String errorMessage = 'Failed to verify OTP';
+      if (e is DioException) {
+        errorMessage = e.response?.data?['message']?.toString() ??
+                      e.message ??
+                      'Network error';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Verify OTP")),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _otpController,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: const InputDecoration(labelText: "Enter OTP"),
-            ),
-            const SizedBox(height: 20),
-            ValueListenableBuilder<bool>(
-              valueListenable: _isLoading,
-              builder: (context, isLoading, child) {
-                return ElevatedButton(
-                  onPressed: isLoading ? null : () => _verifyOtp(context, ref),
-                  child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Verify OTP"),
-                );
-              },
-            ),
-          ],
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: theme.primaryColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+
+              // Title
+              Text(
+                'Verify OTP',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Subtitle
+              Text(
+                'We\'ve sent a verification code to',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.phone_android,
+                    size: 18,
+                    color: theme.primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    mobile,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 48),
+
+              // OTP Input Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Enter 4-digit code',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // OTP TextField
+                      TextField(
+                        controller: _otpController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 16,
+                        ),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          hintText: '• • • •',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[300],
+                            letterSpacing: 16,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: theme.primaryColor,
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Verify Button
+              ValueListenableBuilder<bool>(
+                valueListenable: _isLoading,
+                builder: (context, isLoading, child) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : () => _verifyOtp(context, ref),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Verify & Continue',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, size: 20),
+                              ],
+                            ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 32),
+
+              // Security info
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.primaryColor.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      color: theme.primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Your information is securely encrypted',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

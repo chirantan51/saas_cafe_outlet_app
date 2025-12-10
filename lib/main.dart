@@ -6,6 +6,7 @@ import 'package:outlet_app/ui/screens/new_edit_category_screen.dart';
 import 'package:outlet_app/ui/screens/menu_item_screen.dart';
 import 'package:outlet_app/ui/screens/subscription_create_subscription.dart';
 import 'package:outlet_app/ui/theme.dart';
+import 'package:outlet_app/config/flavor_config.dart';
 import 'ui/screens/create_subscription_plan_screen.dart';
 import 'ui/screens/about_us_screen.dart';
 import 'ui/screens/manage_subscriptions_screen.dart';
@@ -27,27 +28,38 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:outlet_app/services/notification_service.dart'; // Update with actual path
 
+/// Background message handler for Firebase Cloud Messaging
+/// This runs in an isolate separate from the main app
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('dkC: 🔄 Handling background message: ${message.messageId}');
+  print('🔄 Handling background message: ${message.messageId}');
 
-  // (Optional) Initialize Flutter or Firebase if needed
+  // Initialize Firebase if needed (in background isolate)
   await Firebase.initializeApp();
 
-  // You can access background-safe logic here
-  // e.g., trigger Android activity using method channel if needed
+  // Background-safe logic here
+  // Note: UI operations are not available in background handler
+  print('Background notification received: ${message.data}');
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  // Initialize flavor configuration
+  // The flavor is passed via --dart-define during build
+  const String flavor = String.fromEnvironment('FLAVOR', defaultValue: 'chaimates');
+  FlavorConfig.initialize(flavor: flavor);
 
-  // Must be set BEFORE Firebase is initialized
+  // Register background message handler FIRST (must be set BEFORE Firebase.initializeApp)
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // Initialize Firebase (flavor-specific google-services.json will be used)
+  await Firebase.initializeApp();
+
   final container = ProviderContainer();
+
+  // Initialize notification service for foreground notifications
   final notificationService = NotificationService(container);
-  await notificationService.init(); // ✅ AFTER Firebase.init()
+  await notificationService.init();
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
@@ -98,11 +110,12 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider); // ✅ Listen to auth state
+    final brandName = FlavorConfig.instance.brandConfig.brandName;
 
     return MaterialApp(
       navigatorKey: NotificationService.navigatorKey,
-      title: 'Chaimates Outlet',
-      theme: AppTheme.lightTheme, // ✅ Apply Theme Globally
+      title: brandName,
+      theme: AppTheme.lightTheme, // ✅ Apply Theme Globally (now brand-aware)
       routes: {
         "/login": (context) => GenerateOtpScreen(),
         "/dashboard": (context) => const DashboardScreen(),

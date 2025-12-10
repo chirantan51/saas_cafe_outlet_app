@@ -30,9 +30,9 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
         title: const Text('Sales Report'),
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF54A079), Color(0xFF3B7C5F)],
+              colors: [Theme.of(context).primaryColor, Color(0xFF3B7C5F)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -105,7 +105,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                   Text(
                     '${DateFormat('MMM d, yyyy').format(_startDate!)} - ${DateFormat('MMM d, yyyy').format(_endDate!)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF54A079),
+                          color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -135,7 +135,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                               icon: Icons.attach_money,
                               label: 'Total Sales',
                               value: '₹${report.totalSales.toStringAsFixed(2)}',
-                              color: const Color(0xFF54A079),
+                              color: Theme.of(context).primaryColor,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -224,7 +224,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                                               .bodyLarge
                                               ?.copyWith(
                                                 fontWeight: FontWeight.bold,
-                                                color: const Color(0xFF54A079),
+                                                color: Theme.of(context).primaryColor,
                                               ),
                                         ),
                                       ],
@@ -290,8 +290,8 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF54A079),
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
             ),
           ),
           child: child!,
@@ -328,7 +328,7 @@ class _PeriodChip extends StatelessWidget {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onSelected(),
-      selectedColor: const Color(0xFF54A079),
+      selectedColor: Theme.of(context).primaryColor,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.black87,

@@ -1,52 +1,75 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:outlet_app/constants.dart'; // BASE_URL
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/api_service.dart';
 
 /// ✅ Fetch categories
 final categoriesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  String? authToken = prefs.getString("auth_token");
+  try {
+    print('🔵 [categoriesProvider] Starting to fetch categories...');
+    final apiService = ApiService();
+    final response = await apiService.get('/api/categories/');
 
-  if (authToken == null) throw Exception("No authentication token found");
+    print('[categoriesProvider] Response status: ${response.statusCode}');
+    print('[categoriesProvider] Response data type: ${response.data.runtimeType}');
 
-  final response = await http.get(
-    Uri.parse("$BASE_URL/api/categories/"),
-    headers: {"Authorization": "Token $authToken"},
-  );
+    if (response.statusCode == 200) {
+      List<dynamic> data = response.data;
+      print('[categoriesProvider] Raw categories count: ${data.length}');
+      print('[categoriesProvider] First category (if exists): ${data.isNotEmpty ? data[0] : "No categories"}');
 
-  if (response.statusCode == 200) {
-    List<dynamic> data = jsonDecode(response.body);
-    return data
-        .map((category) => {
-              "category_id": category["category_id"],
-              "name": category["name"],
-            })
-        .toList();
-  } else {
-    throw Exception("Failed to fetch categories");
+      // Filter only active categories
+      final activeCategories = data.where((category) {
+        final status = category["status"]?.toString().toLowerCase();
+        return status == "active";
+      }).toList();
+
+      print('[categoriesProvider] Active categories count: ${activeCategories.length}');
+
+      final result = activeCategories
+          .map((category) => {
+                "category_id": category["category_id"],
+                "name": category["name"],
+              })
+          .toList();
+      print('[categoriesProvider] Mapped categories: $result');
+      return result;
+    } else {
+      throw Exception("Failed to fetch categories");
+    }
+  } catch (e) {
+    print('[categoriesProvider] Error: $e');
+    if (e is DioException) {
+      print('[categoriesProvider] DioException status: ${e.response?.statusCode}');
+      print('[categoriesProvider] DioException data: ${e.response?.data}');
+      throw Exception(
+        'Failed to fetch categories: ${e.response?.statusCode} ${e.message}',
+      );
+    }
+    rethrow;
   }
 });
 
 /// ✅ Fetch product details (for editing mode)
 final fetchProductDetailsProvider = FutureProvider.family
     .autoDispose<Map<String, dynamic>, String>((ref, productId) async {
-  final prefs = await SharedPreferences.getInstance();
-  String? authToken = prefs.getString("auth_token");
+  try {
+    final apiService = ApiService();
+    final response = await apiService.get('/api/products/$productId/edit-detail/');
 
-  if (authToken == null) throw Exception("No authentication token found");
-
-  final response = await http.get(
-    Uri.parse("$BASE_URL/api/products/$productId/edit-detail/"),
-    headers: {"Authorization": "Token $authToken"},
-  );
-
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else {
-    throw Exception("Failed to load product details");
+    if (response.statusCode == 200) {
+      return response.data as Map<String, dynamic>;
+    } else {
+      throw Exception("Failed to load product details");
+    }
+  } catch (e) {
+    if (e is DioException) {
+      throw Exception(
+        'Failed to load product details: ${e.response?.statusCode} ${e.message}',
+      );
+    }
+    rethrow;
   }
 });
 

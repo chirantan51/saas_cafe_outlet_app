@@ -1,29 +1,30 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:outlet_app/constants.dart'; // BASE_URL
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/api_service.dart';
 import '../providers/menu_item_provider.dart';
 
 /// ✅ Fetch a single category for editing
 final fetchCategoryDetailsProvider =
     FutureProvider.family<Map<String, dynamic>, String>(
         (ref, categoryId) async {
-  final prefs = await SharedPreferences.getInstance();
-  String? authToken = prefs.getString("auth_token");
+  try {
+    final apiService = ApiService();
+    final response = await apiService.get('/api/categories/$categoryId/');
 
-  if (authToken == null) throw Exception("No authentication token found");
-
-  final response = await http.get(
-    Uri.parse("$BASE_URL/api/categories/$categoryId/"),
-    headers: {"Authorization": "Token $authToken"},
-  );
-
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else {
-    throw Exception("Failed to load category details");
+    if (response.statusCode == 200) {
+      return response.data as Map<String, dynamic>;
+    } else {
+      throw Exception("Failed to load category details");
+    }
+  } catch (e) {
+    if (e is DioException) {
+      throw Exception(
+        'Failed to load category details: ${e.response?.statusCode} ${e.message}',
+      );
+    }
+    rethrow;
   }
 });
 
@@ -71,73 +72,78 @@ class CategoryNotifier extends StateNotifier<Map<String, dynamic>> {
 final createOrUpdateCategoryProvider =
     FutureProvider.family<void, Map<String, dynamic>>(
         (ref, categoryData) async {
-  final prefs = await SharedPreferences.getInstance();
-  String? authToken = prefs.getString("auth_token");
-
-  if (authToken == null) {
-    debugPrint("🔥 ERROR: No authentication token found");
-    throw Exception("No authentication token found");
-  }
-
   try {
-    final String url = categoryData["category_id"] == null
-        ? "$BASE_URL/api/categories/" // ✅ Create
-        : "$BASE_URL/api/categories/${categoryData["category_id"]}/"; // ✅ Update
+    final apiService = ApiService();
+    final String endpoint = categoryData["category_id"] == null
+        ? "/api/categories/" // ✅ Create
+        : "/api/categories/${categoryData["category_id"]}/"; // ✅ Update
 
-    final requestMethod =
-        categoryData["category_id"] == null ? http.post : http.put;
+    debugPrint("🟢 DEBUG: Sending API request to $endpoint");
 
-    debugPrint("🟢 DEBUG: Sending API request to $url");
+    final payload = {
+      "name": categoryData["name"],
+      "description": categoryData["description"],
+      "status": categoryData["status"],
+      "display_image": categoryData["display_image"],
+    };
 
-    final response = await requestMethod(
-      Uri.parse(url),
-      headers: {
-        "Authorization": "Token $authToken",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "name": categoryData["name"],
-        "description": categoryData["description"],
-        "status": categoryData["status"],
-        "display_image": categoryData["display_image"],
-      }),
-    );
+    final response = categoryData["category_id"] == null
+        ? await apiService.post(endpoint, data: payload)
+        : await apiService.put(endpoint, data: payload);
 
     debugPrint("🔵 DEBUG: Response Code = ${response.statusCode}");
-    debugPrint("🔵 DEBUG: Response Body = ${response.body}");
+    debugPrint("🔵 DEBUG: Response Body = ${response.data}");
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       debugPrint(
-          "🔥 ERROR: Failed to save category. Response: ${response.body}");
+          "🔥 ERROR: Failed to save category. Response: ${response.data}");
       throw Exception("Failed to save category");
     }
 
     // ✅ Refresh category list after save
     ref.invalidate(categoriesProvider);
   } catch (error, stacktrace) {
+    if (error is DioException) {
+      debugPrint("🔥 ERROR: DioException in category saving: ${error.response?.statusCode} ${error.message}");
+      throw Exception(
+        'Failed to save category: ${error.response?.statusCode} ${error.message}',
+      );
+    }
     debugPrint("🔥 ERROR: Exception in category saving: $error");
     debugPrint("📌 STACKTRACE: $stacktrace");
-    throw Exception("An error occurred while saving the category");
+    rethrow;
   }
 });
 
 /// ✅ Delete Category
 final deleteCategoryProvider =
     FutureProvider.family<void, String>((ref, categoryId) async {
-  final prefs = await SharedPreferences.getInstance();
-  String? authToken = prefs.getString("auth_token");
+  try {
+    final apiService = ApiService();
+    final response = await apiService.delete("/api/categories/$categoryId/");
 
-  if (authToken == null) throw Exception("No authentication token found");
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      String errorMsg = 'Failed to delete category';
+      final errData = response.data;
+      if (errData is Map && errData['detail'] is String) {
+        errorMsg = errData['detail'];
+      }
+      throw Exception(errorMsg);
+    }
 
-  final response = await http.delete(
-    Uri.parse("$BASE_URL/api/categories/$categoryId/"),
-    headers: {"Authorization": "Token $authToken"},
-  );
-
-  if (response.statusCode != 204) {
-    throw Exception("Failed to delete category");
+    // ✅ Refresh category list after deletion
+    ref.invalidate(categoriesProvider);
+  } catch (e) {
+    if (e is DioException) {
+      String errorMsg = 'Failed to delete category';
+      final errData = e.response?.data;
+      if (errData is Map && errData['detail'] is String) {
+        errorMsg = errData['detail'];
+      } else if (e.response?.statusCode != null) {
+        errorMsg = '$errorMsg: ${e.response?.statusCode}';
+      }
+      throw Exception(errorMsg);
+    }
+    rethrow;
   }
-
-  // ✅ Refresh category list after deletion
-  ref.invalidate(categoriesProvider);
 });

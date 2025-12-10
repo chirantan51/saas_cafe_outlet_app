@@ -1,26 +1,19 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import '../constants.dart';
+import '../core/api_service.dart';
 
 final dashboardProvider = FutureProvider<DashboardMetrics>((ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString("auth_token");
-  if (token == null) throw Exception("Missing token");
+  try {
+    final api = ApiService();
 
-  final res = await http.get(
-    Uri.parse('$BASE_URL/api/outlets/dashboard/'),
-    headers: {
-      'Authorization': 'Token $token',
-      'Content-Type': 'application/json',
-    },
-  );
+    final res = await api.get('/api/outlets/dashboard/');
 
-  if (res.statusCode == 200) {
-    return DashboardMetrics.fromJson(jsonDecode(res.body));
-  } else {
-    throw Exception("Failed to load dashboard metrics");
+    if (res.statusCode == 200) {
+      return DashboardMetrics.fromJson(res.data);
+    } else {
+      throw Exception("Failed to load dashboard metrics");
+    }
+  } on ApiException catch (e) {
+    throw Exception(e.message);
   }
 });
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:outlet_app/config/flavor_config.dart';
 
 class OutletProfile {
   const OutletProfile({
@@ -27,17 +28,18 @@ class OutletProfile {
 }
 
 // Update these values whenever outlet details change.
-const OutletProfile _profile = OutletProfile(
-  name: 'Chaimates Outlet',
+// TODO: In future, this data will come from flavor-specific configuration
+OutletProfile get _profile => OutletProfile(
+  name: FlavorConfig.instance.brandConfig.brandName,
   description:
-      'Chaimates serves handcrafted tea, coffee, and quick bites for offices and neighbourhoods. '
+      FlavorConfig.instance.brandConfig.brandName + ' serves handcrafted tea, coffee, and quick bites for offices and neighbourhoods. '
       'We prepare every order fresh, focusing on consistent taste and quality ingredients.',
-  highlights: <String>[
+  highlights: const <String>[
     'Signature handcrafted beverages',
     'Corporate pantry partnerships',
     'Bulk and party catering support',
   ],
-  addressLines: <String>[
+  addressLines: const <String>[
     'Plot 23, Tower A, Tech Park Road',
     'Sector 135, Noida, Uttar Pradesh 201304',
   ],

@@ -1,15 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../constants.dart';
+
+import '../core/api_service.dart';
 
 class ReportService {
-  final Dio _dio = Dio();
-
-  Future<String?> _getAuthToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
-
   /// Get Sales Report
   /// period: 'today', 'week', 'month', 'custom'
   /// startDate & endDate: for custom period (YYYY-MM-DD format)
@@ -18,22 +11,17 @@ class ReportService {
     String? startDate,
     String? endDate,
   }) async {
-    final token = await _getAuthToken();
-    if (token == null) throw Exception('Not authenticated');
-
-    final queryParams = <String, dynamic>{'period': period};
-    if (period == 'custom' && startDate != null && endDate != null) {
-      queryParams['start_date'] = startDate;
-      queryParams['end_date'] = endDate;
-    }
-
     try {
-      final response = await _dio.get(
-        '$BASE_URL/api/reports/sales/',
+      final queryParams = <String, dynamic>{'period': period};
+      if (period == 'custom' && startDate != null && endDate != null) {
+        queryParams['start_date'] = startDate;
+        queryParams['end_date'] = endDate;
+      }
+
+      final apiService = ApiService();
+      final response = await apiService.get(
+        '/api/reports/sales/',
         queryParameters: queryParams,
-        options: Options(
-          headers: {'Authorization': 'Token $token'},
-        ),
       );
 
       if (response.statusCode == 200) {
@@ -42,7 +30,12 @@ class ReportService {
         throw Exception('Failed to fetch sales report');
       }
     } catch (e) {
-      throw Exception('Error fetching sales report: $e');
+      if (e is DioException) {
+        throw Exception(
+          'Error fetching sales report: ${e.response?.statusCode} ${e.message}',
+        );
+      }
+      rethrow;
     }
   }
 
@@ -54,22 +47,17 @@ class ReportService {
     String? startDate,
     String? endDate,
   }) async {
-    final token = await _getAuthToken();
-    if (token == null) throw Exception('Not authenticated');
-
-    final queryParams = <String, dynamic>{'period': period};
-    if (period == 'custom' && startDate != null && endDate != null) {
-      queryParams['start_date'] = startDate;
-      queryParams['end_date'] = endDate;
-    }
-
     try {
-      final response = await _dio.get(
-        '$BASE_URL/api/reports/products/',
+      final queryParams = <String, dynamic>{'period': period};
+      if (period == 'custom' && startDate != null && endDate != null) {
+        queryParams['start_date'] = startDate;
+        queryParams['end_date'] = endDate;
+      }
+
+      final apiService = ApiService();
+      final response = await apiService.get(
+        '/api/reports/products/',
         queryParameters: queryParams,
-        options: Options(
-          headers: {'Authorization': 'Token $token'},
-        ),
       );
 
       if (response.statusCode == 200) {
@@ -84,7 +72,12 @@ class ReportService {
         throw Exception('Failed to fetch products report');
       }
     } catch (e) {
-      throw Exception('Error fetching products report: $e');
+      if (e is DioException) {
+        throw Exception(
+          'Error fetching products report: ${e.response?.statusCode} ${e.message}',
+        );
+      }
+      rethrow;
     }
   }
 
@@ -96,22 +89,17 @@ class ReportService {
     String? startDate,
     String? endDate,
   }) async {
-    final token = await _getAuthToken();
-    if (token == null) throw Exception('Not authenticated');
-
-    final queryParams = <String, dynamic>{'period': period};
-    if (period == 'custom' && startDate != null && endDate != null) {
-      queryParams['start_date'] = startDate;
-      queryParams['end_date'] = endDate;
-    }
-
     try {
-      final response = await _dio.get(
-        '$BASE_URL/api/reports/customers/',
+      final queryParams = <String, dynamic>{'period': period};
+      if (period == 'custom' && startDate != null && endDate != null) {
+        queryParams['start_date'] = startDate;
+        queryParams['end_date'] = endDate;
+      }
+
+      final apiService = ApiService();
+      final response = await apiService.get(
+        '/api/reports/customers/',
         queryParameters: queryParams,
-        options: Options(
-          headers: {'Authorization': 'Token $token'},
-        ),
       );
 
       if (response.statusCode == 200) {
@@ -126,7 +114,12 @@ class ReportService {
         throw Exception('Failed to fetch customer sales report');
       }
     } catch (e) {
-      throw Exception('Error fetching customer sales report: $e');
+      if (e is DioException) {
+        throw Exception(
+          'Error fetching customer sales report: ${e.response?.statusCode} ${e.message}',
+        );
+      }
+      rethrow;
     }
   }
 }

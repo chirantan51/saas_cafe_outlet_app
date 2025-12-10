@@ -1,32 +1,25 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
-import 'package:outlet_app/constants.dart';
+import 'package:outlet_app/core/api_service.dart';
 
 Future<bool> updateOrderStatus({
   required String orderId,
   required String newStatus, // "Accepted" or "Rejected"
   required String authToken,
 }) async {
-  final url = Uri.parse("$BASE_URL/api/orders/$orderId/change-status/");
+  try {
+    final apiService = ApiService();
+    final response = await apiService.post(
+      "/api/orders/$orderId/change-status/",
+      data: {"status": newStatus},
+    );
 
-  final response = await http.post(
-    url,
-    headers: {
-      "Authorization": "Token $authToken",
-      "Content-Type": "application/json",
-    },
-    body: jsonEncode({
-      "status": newStatus,
-    }),
-  );
-  if (response.statusCode != 200) {
-    debugPrint("🔥 ERROR: Failed to update order status: ${response.body}");
+    return response.statusCode == 200;
+  } catch (e) {
+    debugPrint("🔥 ERROR: Failed to update order status: $e");
     return false;
   }
-  return response.statusCode == 200;
 }
 
 Future<bool> updateOrderPayment({
@@ -35,54 +28,39 @@ Future<bool> updateOrderPayment({
   required String paymentMethod,
   required String authToken,
 }) async {
-  final url = Uri.parse("$BASE_URL/api/orders/$orderId/");
+  try {
+    final apiService = ApiService();
+    final response = await apiService.patch(
+      "/api/orders/$orderId/",
+      data: {
+        "payment_status": paymentStatus,
+        "payment_method": paymentMethod,
+      },
+    );
 
-  final response = await http.patch(
-    url,
-    headers: {
-      "Authorization": "Token $authToken",
-      "Content-Type": "application/json",
-    },
-    body: jsonEncode({
-      "payment_status": paymentStatus,
-      "payment_method": paymentMethod,
-    }),
-  );
-
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    debugPrint('🔥 ERROR: Failed to update payment details: ${response.statusCode} ${response.body}');
+    return response.statusCode! >= 200 && response.statusCode! < 300;
+  } catch (e) {
+    debugPrint('🔥 ERROR: Failed to update payment details: $e');
     return false;
   }
-  return true;
 }
 
 Future<bool> cancelOrder({
   required String orderId,
   required String comment,
 }) async {
-  final token = await _authToken();
-  if (token == null || token.isEmpty) {
-    throw Exception('Missing auth token');
-  }
+  try {
+    final apiService = ApiService();
+    final response = await apiService.patch(
+      "/api/orders/$orderId/cancel/",
+      data: {"comment": comment},
+    );
 
-  final url = Uri.parse("$BASE_URL/api/orders/$orderId/cancel/");
-
-  final response = await http.patch(
-    url,
-    headers: {
-      "Authorization": "Token $token",
-      "Content-Type": "application/json",
-    },
-    body: jsonEncode({
-      "comment": comment,
-    }),
-  );
-
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    debugPrint('🔥 ERROR: Failed to cancel order: ${response.statusCode} ${response.body}');
+    return response.statusCode! >= 200 && response.statusCode! < 300;
+  } catch (e) {
+    debugPrint('🔥 ERROR: Failed to cancel order: $e');
     return false;
   }
-  return true;
 }
 
 Future<bool> updateDineInOrder({
@@ -91,39 +69,25 @@ Future<bool> updateDineInOrder({
   required String deliveryType,
   required List<Map<String, dynamic>> items,
 }) async {
-  final token = await _authToken();
-  if (token == null || token.isEmpty) {
-    throw Exception('Missing auth token');
-  }
+  try {
+    final payload = {
+      'order_id': orderId,
+      'customerId': customerId,
+      'delivery_type': deliveryType,
+      'items': items,
+    };
 
-  final url = Uri.parse('$BASE_URL/api/orders/$orderId/');
+    final apiService = ApiService();
+    final response = await apiService.patch(
+      '/api/orders/$orderId/',
+      data: payload,
+    );
 
-  final payload = {
-    'order_id': orderId,
-    'customerId': customerId,
-    'delivery_type': deliveryType,
-    'items': items,
-  };
-
-  final response = await http.patch(
-    url,
-    headers: {
-      'Authorization': 'Token $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode(payload),
-  );
-
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    debugPrint('🔥 ERROR: Failed to update dine-in order: ${response.statusCode} ${response.body}');
+    return response.statusCode! >= 200 && response.statusCode! < 300;
+  } catch (e) {
+    debugPrint('🔥 ERROR: Failed to update dine-in order: $e');
     return false;
   }
-  return true;
-}
-
-Future<String?> _authToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getString("auth_token");
 }
 
 Future<void> createManualOrder({
@@ -136,11 +100,6 @@ Future<void> createManualOrder({
   required List<Map<String, dynamic>> items,
   String? comments,
 }) async {
-  final token = await _authToken();
-  if (token == null || token.isEmpty) {
-    throw Exception('Missing auth token');
-  }
-
   final payload = {
     "customer_id": customerId,
     "delivery_type": deliveryType,
@@ -149,6 +108,7 @@ Future<void> createManualOrder({
     "payment_status": paymentStatus,
     "items": items,
   };
+
   if (comments != null && comments.isNotEmpty) {
     payload["comments"] = comments;
   }
@@ -156,19 +116,19 @@ Future<void> createManualOrder({
     payload["address_id"] = addressId;
   }
 
-  final response = await http.post(
-    Uri.parse("$BASE_URL/api/outlets/orders/create/"),
-    headers: {
-      "Authorization": "Token $token",
-      "Content-Type": "application/json",
-    },
-    body: jsonEncode(payload),
-  );
-
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(
-      'Failed to create order: ${response.statusCode} ${response.reasonPhrase} - ${response.body}',
+  try {
+    final apiService = ApiService();
+    await apiService.post(
+      "/api/outlets/orders/create/",
+      data: payload,
     );
+  } catch (e) {
+    if (e is DioException) {
+      throw Exception(
+        'Failed to create order: ${e.response?.statusCode} ${e.message} - ${e.response?.data}',
+      );
+    }
+    rethrow;
   }
 }
 
@@ -338,11 +298,6 @@ Future<ManualOrderQuote> fetchManualOrderQuote({
   String? comments,
   required List<Map<String, dynamic>> items,
 }) async {
-  final token = await _authToken();
-  if (token == null || token.isEmpty) {
-    throw Exception('Missing auth token');
-  }
-
   final payload = <String, dynamic>{
     'customer_id': customerId,
     'delivery_type': deliveryType,
@@ -365,30 +320,30 @@ Future<ManualOrderQuote> fetchManualOrderQuote({
     payload['comments'] = comments;
   }
 
-  print(jsonEncode(payload));
+  debugPrint('📋 Order Quote Request: $payload');
 
-  final response = await http.post(
-    Uri.parse("$BASE_URL/api/orders/quote/"),
-    headers: {
-      'Authorization': 'Token $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode(payload),
-  );
-
-  print (jsonEncode(payload));
-  
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(
-      'Failed to fetch order quote: ${response.statusCode} ${response.reasonPhrase} - ${response.body}',
+  try {
+    final apiService = ApiService();
+    final response = await apiService.post(
+      "/api/orders/quote/",
+      data: payload,
     );
-  }
 
-  final decoded = jsonDecode(response.body);
-  
-  if (decoded is Map<String, dynamic>) {
-    return ManualOrderQuote.fromJson(decoded);
-  }
+    debugPrint('✅ Order Quote Response: ${response.data}');
 
-  throw Exception('Unexpected quote payload format');
+    final decoded = response.data;
+
+    if (decoded is Map<String, dynamic>) {
+      return ManualOrderQuote.fromJson(decoded);
+    }
+
+    throw Exception('Unexpected quote payload format');
+  } catch (e) {
+    if (e is DioException) {
+      throw Exception(
+        'Failed to fetch order quote: ${e.response?.statusCode} ${e.message} - ${e.response?.data}',
+      );
+    }
+    rethrow;
+  }
 }

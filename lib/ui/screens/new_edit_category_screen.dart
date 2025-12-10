@@ -1,16 +1,13 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:outlet_app/constants.dart';
 import 'package:outlet_app/core/utils/url_utils.dart';
 import 'package:outlet_app/providers/menu_item_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
 import '../../providers/category_provider.dart';
+import '../../core/api_service.dart';
+import '../widgets/action_button.dart';
 
 class NewEditCategoryScreen extends ConsumerStatefulWidget {
   final bool isEditMode;
@@ -66,47 +63,42 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
 
   Future<void> _uploadCategoryImage() async {
     final picker = ImagePicker();
-    final prefs = await SharedPreferences.getInstance();
-    String? authToken = prefs.getString("auth_token");
-
-    if (authToken == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Authentication failed")));
-      return;
-    }
-
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return; // User canceled image selection
 
-    File imageFile = File(pickedFile.path);
+    try {
+      final apiService = ApiService();
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          pickedFile.path,
+          filename: pickedFile.path.split('/').last,
+        ),
+      });
 
-    var request = http.MultipartRequest(
-      "POST",
-      Uri.parse("$BASE_URL/api/categories/upload_image/"),
-    );
-
-    request.headers["Authorization"] = "Token $authToken";
-    request.files
-        .add(await http.MultipartFile.fromPath("image", imageFile.path));
-
-    var response = await request.send();
-    var responseData = await response.stream.bytesToString();
-
-    if (response.statusCode == 201) {
-      final responseBody = jsonDecode(responseData);
-      String uploadedImageUrl = responseBody["display_image"];
-
-      print("Category image uploaded at: $uploadedImageUrl");
-      ref
-          .read(categoryStateProvider.notifier)
-          .updateField("display_image", uploadedImageUrl);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Image uploaded successfully!")),
+      final response = await apiService.post(
+        '/api/categories/upload_image/',
+        data: formData,
       );
-    } else {
+
+      if (response.statusCode == 201) {
+        String uploadedImageUrl = response.data["display_image"];
+
+        print("Category image uploaded at: $uploadedImageUrl");
+        ref
+            .read(categoryStateProvider.notifier)
+            .updateField("display_image", uploadedImageUrl);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image uploaded successfully!")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to upload image")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to upload image")),
+        SnackBar(content: Text("Failed to upload image: $e")),
       );
     }
   }
@@ -119,101 +111,49 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
     }
 
     final state = ref.read(categoryStateProvider);
-    final prefs = await SharedPreferences.getInstance();
-    String? authToken = prefs.getString("auth_token");
-
-    if (authToken == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Authentication failed")));
-      return;
-    }
 
     try {
-      final String url = state["category_id"] == null
-          ? "$BASE_URL/api/categories/" // ✅ Create
-          : "$BASE_URL/api/categories/${state["category_id"]}/"; // ✅ Update
+      final apiService = ApiService();
+      final isUpdate = state["category_id"] != null;
+      final endpoint = isUpdate
+          ? '/api/categories/${state["category_id"]}/'
+          : '/api/categories/';
 
-      final requestMethod = state["category_id"] == null ? http.post : http.put;
+      debugPrint("🟢 DEBUG: Sending API request to $endpoint");
 
-      debugPrint("🟢 DEBUG: Sending API request to $url");
-
-      final response = await requestMethod(
-        Uri.parse(url),
-        headers: {
-          "Authorization": "Token $authToken",
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "name": state["name"],
-          "description": state["description"],
-          "status": state["status"],
-          "display_image": state["display_image"],
-        }),
-      );
+      final response = isUpdate
+          ? await apiService.put(
+              endpoint,
+              data: {
+                "name": state["name"],
+                "description": state["description"],
+                "status": state["status"],
+                "display_image": state["display_image"],
+              },
+            )
+          : await apiService.post(
+              endpoint,
+              data: {
+                "name": state["name"],
+                "description": state["description"],
+                "status": state["status"],
+                "display_image": state["display_image"],
+              },
+            );
 
       debugPrint("🔵 DEBUG: Response Code = ${response.statusCode}");
-      debugPrint("🔵 DEBUG: Response Body = ${response.body}");
+      debugPrint("🔵 DEBUG: Response Body = ${response.data}");
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        debugPrint(
-            "🔥 ERROR: Failed to save category. Response: ${response.body}");
-        throw Exception("Failed to save category");
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Category ${state["name"]} created..")));
+          SnackBar(content: Text("Category ${state["name"]} ${isUpdate ? 'updated' : 'created'}..")));
       // ✅ Refresh category list after save
       ref.invalidate(categoriesProvider);
       Navigator.pop(context, true);
     } catch (error, stacktrace) {
       debugPrint("🔥 ERROR: Exception in category saving: $error");
       debugPrint("📌 STACKTRACE: $stacktrace");
-      throw Exception("An error occurred while saving the category");
-    }
-  }
-
-  /// ✅ Save Category (Create or Update)
-  Future<void> _saveCategory() async {
-    if (!_formKey.currentState!.validate()) return; // ✅ Form validation
-
-    final state = ref.read(categoryStateProvider);
-    final prefs = await SharedPreferences.getInstance();
-    String? authToken = prefs.getString("auth_token");
-
-    if (authToken == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Authentication failed")));
-      return;
-    }
-
-    // ✅ Enforce Image Upload Validation
-    if (state["display_image"] == null || state["display_image"].isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please upload an image")),
-      );
-      return;
-    }
-
-    final categoryData = {
-      "category_id": widget.isEditMode ? widget.categoryId : null,
-      "name": state["name"],
-      "description": state["description"],
-      "status": state["status"],
-      "display_image": state["display_image"],
-    };
-
-    try {
-      await ref.read(createOrUpdateCategoryProvider(categoryData).future);
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.isEditMode
-            ? "Category updated successfully"
-            : "Category added successfully"),
-      ));
-
-      ref.invalidate(categoryStateProvider);
-      Navigator.pop(context, true);
-    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to save category")),
       );
@@ -227,7 +167,8 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditMode ? "Edit Category" : "New Category"),
-        backgroundColor: const Color(0xFF54A079),
+        elevation: 1,
+        shadowColor: Colors.black26,
       ),
       body: _isLoading
           ? const Center(
@@ -311,9 +252,13 @@ class _NewEditCategoryScreenState extends ConsumerState<NewEditCategoryScreen> {
                     const SizedBox(height: 20),
 
                     // ✅ Save Button
-                    ElevatedButton(
-                      onPressed: () => _saveCategory2(context, ref),
-                      child: Text(widget.isEditMode ? "Update" : "Save"),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ActionButton(
+                        onPressed: () => _saveCategory2(context, ref),
+                        label: widget.isEditMode ? "Update" : "Save",
+                        icon: widget.isEditMode ? Icons.save : Icons.check,
+                      ),
                     ),
                   ],
                 ),

@@ -136,10 +136,10 @@ class _OrderDetailDialogState extends ConsumerState<OrderDetailDialog> {
                                 await launchUrl(telUrl);
                               }
                             },
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.phone,
                               size: 22,
-                              color: Color(0xFF54A079),
+                              color: Theme.of(context).primaryColor,
                             ),
                           ),
                         ],

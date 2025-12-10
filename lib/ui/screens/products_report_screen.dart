@@ -60,9 +60,9 @@ class _ProductsReportScreenState extends ConsumerState<ProductsReportScreen> {
         title: const Text('Products & Sold Qty'),
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF54A079), Color(0xFF3B7C5F)],
+              colors: [Theme.of(context).primaryColor, const Color(0xFF3B7C5F)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -148,7 +148,7 @@ class _ProductsReportScreenState extends ConsumerState<ProductsReportScreen> {
                       Text(
                         '${DateFormat('MMM d, yyyy').format(_startDate!)} - ${DateFormat('MMM d, yyyy').format(_endDate!)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF54A079),
+                              color: Theme.of(context).primaryColor,
                               fontWeight: FontWeight.w600,
                             ),
                       ),
@@ -250,8 +250,8 @@ class _ProductsReportScreenState extends ConsumerState<ProductsReportScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF54A079),
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
             ),
           ),
           child: child!,
@@ -356,7 +356,7 @@ class _PeriodChip extends StatelessWidget {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onSelected(),
-      selectedColor: const Color(0xFF54A079),
+      selectedColor: Theme.of(context).primaryColor,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.black87,
@@ -394,7 +394,7 @@ class _ProductsTable extends StatelessWidget {
           columnSpacing: 24,
           horizontalMargin: 16,
           headingRowColor: WidgetStateProperty.all(
-            const Color(0xFF54A079),
+            Theme.of(context).primaryColor,
           ),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
@@ -461,7 +461,7 @@ class _ProductsTable extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF54A079),
+                      color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -477,9 +477,9 @@ class _ProductsTable extends StatelessWidget {
                 DataCell(
                   Text(
                     '₹${product.totalRevenue.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF54A079),
+                      color: Theme.of(context).primaryColor,
                       fontSize: 14,
                     ),
                   ),

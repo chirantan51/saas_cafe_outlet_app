@@ -1,15 +1,14 @@
-import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:outlet_app/constants.dart';
 import 'package:outlet_app/core/utils/url_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/api_service.dart';
 import '../../providers/menu_item_provider.dart';
 import '../../providers/menu_provider.dart';
+import '../widgets/action_button.dart';
 
 enum MenuItemLayout { modern, classic }
 
@@ -258,21 +257,6 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final state = ref.read(menuItemStateProvider);
-    final prefs = await SharedPreferences.getInstance();
-    String? authToken = prefs.getString("auth_token");
-
-    if (authToken == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Authentication failed")),
-      );
-      return;
-    }
-
-    final url = widget.isEditMode
-        ? "$BASE_URL/api/products/${widget.productId}/"
-        : "$BASE_URL/api/products/";
-
-    final request = widget.isEditMode ? http.put : http.post;
 
     final stockText = (state["stock"] ?? "").toString().trim();
     final parsedStock = stockText.isEmpty ? null : int.tryParse(stockText);
@@ -315,50 +299,72 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
     }
     payload["customizable"] = customizable;
 
-    List<Map<String, dynamic>> variantsPayload;
-    try {
-      variantsPayload = _buildVariantsPayload();
-    } on _VariantValidationException catch (error) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
-      return;
-    }
+    // Always include variants_payload in the payload
+    if (customizable) {
+      List<Map<String, dynamic>> variantsPayload;
+      try {
+        variantsPayload = _buildVariantsPayload();
+      } on _VariantValidationException catch (error) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+        return;
+      }
 
-    if (variantsPayload.isNotEmpty) {
-      payload["variants_payload"] = variantsPayload;
-      payload["customizable"] = true;
-    }
-
-    print("dkC: " + jsonEncode(payload));
-
-    final response = await request(
-      Uri.parse(url),
-      headers: {
-        "Authorization": "Token $authToken",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode(payload),
-    );
-    
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.isEditMode
-            ? "Item updated successfully"
-            : "Item added successfully"),
-      ));
-
-      ref.invalidate(menuItemStateProvider); // ✅ Reset the provider state
-      ref.read(menuProvider.notifier).fetchMenuData();
-      Navigator.pop(context, true);
+      if (variantsPayload.isNotEmpty) {
+        payload["variants_payload"] = variantsPayload;
+        payload["customizable"] = true;
+      } else {
+        // Empty variants when customizable is true but no variants defined
+        payload["variants_payload"] = [];
+      }
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Failed to save item")));
+      // When variants are disabled, send empty array
+      payload["variants_payload"] = [];
+    }
+
+    print("dkC: $payload");
+
+    try {
+      final apiService = ApiService();
+      final response = widget.isEditMode
+          ? await apiService.put(
+              '/api/products/${widget.productId}/',
+              data: payload,
+            )
+          : await apiService.post(
+              '/api/products/',
+              data: payload,
+            );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.isEditMode
+              ? "Item updated successfully"
+              : "Item added successfully"),
+        ));
+
+        ref.invalidate(menuItemStateProvider); // ✅ Reset the provider state
+        ref.read(menuProvider.notifier).fetchMenuData();
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Failed to save item")));
+      }
+    } on DioException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                "Failed to save item: ${e.response?.statusCode} ${e.message}")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to save item: $e")),
+      );
     }
   }
 
   InputDecoration _fieldDecoration(String label, {String? hint}) {
-    const accent = Color(0xFF54A079);
+    final accent = Theme.of(context).primaryColor;
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -374,13 +380,13 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: accent, width: 1.5),
+        borderSide: BorderSide(color: accent, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
-  Widget _buildVariantsEditor(ThemeData theme, {required bool useCard}) {
+  Widget _buildVariantsEditorContent(ThemeData theme) {
     final children = <Widget>[];
 
     if (_variantForms.where((entry) => !entry.isCompletelyEmpty).isEmpty) {
@@ -398,7 +404,7 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
         theme,
         entry: _variantForms[index],
         index: index,
-        useCardDecoration: useCard,
+        useCardDecoration: true,
       ));
       if (index != _variantForms.length - 1) {
         children.add(const SizedBox(height: 12));
@@ -414,10 +420,14 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
       ),
     );
 
-    final content = Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: children,
     );
+  }
+
+  Widget _buildVariantsEditor(ThemeData theme, {required bool useCard}) {
+    final content = _buildVariantsEditorContent(theme);
 
     if (useCard) {
       return _FieldCard(child: content);
@@ -518,7 +528,14 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
               const Spacer(),
               Switch.adaptive(
                 value: entry.isActive,
-                activeColor: const Color(0xFF54A079),
+                activeTrackColor:
+                    Theme.of(context).primaryColor.withValues(alpha: 0.5),
+                thumbColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Theme.of(context).primaryColor;
+                  }
+                  return null;
+                }),
                 onChanged: (value) {
                   setState(() {
                     entry.isActive = value;
@@ -555,20 +572,10 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: SizedBox(
           width: double.infinity,
-          child: ElevatedButton.icon(
+          child: ActionButton(
             onPressed: _saveProduct,
-            icon: Icon(widget.isEditMode ? Icons.save : Icons.add),
-            label: Text(
-              widget.isEditMode ? "Save changes" : "Create item",
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF54A079),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
+            icon: widget.isEditMode ? Icons.save : Icons.add,
+            label: widget.isEditMode ? "Save changes" : "Create item",
           ),
         ),
       ),
@@ -683,7 +690,16 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
                       .read(menuItemStateProvider.notifier)
                       .updateField("itemsIncluded", value),
                 ),
-                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          const _SectionHeader(title: "Variants & pricing"),
+          const SizedBox(height: 12),
+          _FieldCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   value: menuState["customizable"] == true,
@@ -691,18 +707,22 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
                   subtitle: const Text(
                     "Allow customers to choose from multiple versions.",
                   ),
-                  activeColor: const Color(0xFF54A079),
+                  activeTrackColor:
+                      Theme.of(context).primaryColor.withValues(alpha: 0.5),
+                  activeColor: Theme.of(context).primaryColor,
                   onChanged: (value) => ref
                       .read(menuItemStateProvider.notifier)
                       .updateField("customizable", value),
                 ),
+                if (menuState["customizable"] == true) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  _buildVariantsEditorContent(theme),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 28),
-          const _SectionHeader(title: "Variants & pricing"),
-          const SizedBox(height: 12),
-          _buildVariantsEditor(theme, useCard: true),
           const SizedBox(height: 28),
           const _SectionHeader(title: "Timing & preparations"),
           const SizedBox(height: 12),
@@ -819,10 +839,17 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
                     ),
                     Switch.adaptive(
                       value: menuState["isActive"],
+                      activeTrackColor:
+                          Theme.of(context).primaryColor.withValues(alpha: 0.5),
+                      thumbColor: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Theme.of(context).primaryColor;
+                        }
+                        return null;
+                      }),
                       onChanged: (value) => ref
                           .read(menuItemStateProvider.notifier)
                           .updateField("isActive", value),
-                      activeColor: const Color(0xFF54A079),
                     ),
                   ],
                 ),
@@ -994,14 +1021,17 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
             value: menuState["customizable"] == true,
             title: const Text("Enable variants"),
             subtitle: const Text("Allow customers to pick a variant."),
-            activeColor: const Color(0xFF54A079),
+            activeTrackColor:
+                Theme.of(context).primaryColor.withValues(alpha: 0.5),
+            activeColor: Theme.of(context).primaryColor,
             onChanged: (value) => ref
                 .read(menuItemStateProvider.notifier)
                 .updateField("customizable", value),
           ),
           const SizedBox(height: 12),
-          _buildVariantsEditor(theme, useCard: false),
-          const SizedBox(height: 16),
+          if (menuState["customizable"] == true)
+            _buildVariantsEditor(theme, useCard: false),
+          if (menuState["customizable"] == true) const SizedBox(height: 16),
           TextFormField(
             decoration: const InputDecoration(
               labelText: "Initial stock",
@@ -1046,10 +1076,12 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
           SwitchListTile(
             title: const Text("Active status"),
             value: menuState["isActive"],
+            activeTrackColor:
+                Theme.of(context).primaryColor.withValues(alpha: 0.5),
+            activeThumbColor: Theme.of(context).primaryColor,
             onChanged: (value) => ref
                 .read(menuItemStateProvider.notifier)
                 .updateField("isActive", value),
-            activeColor: const Color(0xFF54A079),
           ),
           const SizedBox(height: 40),
         ],
@@ -1060,51 +1092,57 @@ class _MenuItemScreenState extends ConsumerState<MenuItemScreen> {
   /// ✅ Upload Product Image Separately
   Future<void> _uploadProductImage(BuildContext context, WidgetRef ref) async {
     final picker = ImagePicker();
-    final prefs = await SharedPreferences.getInstance();
-    String? authToken = prefs.getString("auth_token");
-
-    if (authToken == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Authentication failed")));
-      return;
-    }
 
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return; // User canceled image selection
 
     File imageFile = File(pickedFile.path);
 
-    var request = http.MultipartRequest(
-      "POST",
-      Uri.parse(
-          "$BASE_URL/api/products/upload_image/"), // ✅ Upload without productId
-    );
+    try {
+      final apiService = ApiService();
 
-    request.headers["Authorization"] = "Token $authToken";
-    request.files
-        .add(await http.MultipartFile.fromPath("image", imageFile.path));
+      // Create FormData for multipart upload
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
 
-    var response = await request.send();
-    var responseData = await response.stream.bytesToString();
+      final response = await apiService.post(
+        '/api/products/upload_image/',
+        data: formData,
+      );
 
-    if (response.statusCode == 201) {
-      final responseBody = jsonDecode(responseData);
-      String uploadedImageUrl =
-          responseBody["display_image"]; // ✅ Get the uploaded image URL
+      if (response.statusCode == 201) {
+        String uploadedImageUrl = response.data["display_image"];
 
-      print("dkC Image uploaded at: $uploadedImageUrl");
-      // ✅ Store uploaded image URL in state
-      ref
-          .read(menuItemStateProvider.notifier)
-          .updateField("display_image", uploadedImageUrl);
+        print("dkC Image uploaded at: $uploadedImageUrl");
+        // ✅ Store uploaded image URL in state
+        ref
+            .read(menuItemStateProvider.notifier)
+            .updateField("display_image", uploadedImageUrl);
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Image uploaded successfully!"),
-      ));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Failed to upload image"),
-      ));
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Image uploaded successfully!"),
+        ));
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Failed to upload image"),
+        ));
+      }
+    } on DioException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to upload image: ${e.message}")),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to upload image: $e")),
+      );
     }
   }
 }
@@ -1346,51 +1384,13 @@ class _MenuItemAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final title = isEditMode ? 'Edit product' : 'Add new product';
-    final subtitle = isEditMode
-        ? 'Update the details customers see in your menu'
-        : 'Create a menu item your customers will love';
 
     return AppBar(
       automaticallyImplyLeading: true,
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      iconTheme: const IconThemeData(color: Colors.white),
-      actionsIconTheme: const IconThemeData(color: Colors.white),
-      titleSpacing: 16,
-      centerTitle: false,
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF54A079),
-              Color(0xFF3B7C5F),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white70,
-            ),
-          ),
-        ],
-      ),
+      elevation: 1,
+      shadowColor: Colors.black26,
+      title: Text(title),
       actions: [
         PopupMenuButton<MenuItemLayout>(
           tooltip: 'Change layout',

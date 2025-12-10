@@ -1,0 +1,17 @@
+# Launcher icons configuration for Chaimates brand
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/chaimates/logo.png"
+
+  # Android-specific configuration
+  android_min_sdk_android: 21
+  android_adaptive_icon_background: "#FFFFFF"  # White background
+  android_adaptive_icon_foreground: "assets/chaimates/logo.png"
+
+  # Remove alpha channel for iOS App Store compliance
+  remove_alpha_ios: true
+
+  # Generate icons in flavor-specific directories
+  android_path: "android/app/src/chaimates/res"
+  ios_path: "ios/Runner/Assets.xcassets/AppIcon-Chaimates.appiconset"

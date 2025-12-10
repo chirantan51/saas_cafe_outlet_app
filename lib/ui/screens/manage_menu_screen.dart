@@ -62,7 +62,7 @@ class _ManageMenuScreenState extends ConsumerState<ManageMenuScreen> {
     final menuNotifier = ref.read(menuProvider.notifier);
     final size = MediaQuery.of(context).size;
     final padding = MediaQuery.of(context).padding;
-    const accentColor = Color(0xFF54A079);
+    final accentColor = Theme.of(context).primaryColor;
 
     final lowerQuery = _searchQuery.toLowerCase();
     final visibleItems = menuState.filteredItems.where((item) {
@@ -198,8 +198,32 @@ class _ManageMenuScreenState extends ConsumerState<ManageMenuScreen> {
                                             menuProvider); // ✅ Refresh Menu List
                                       });
                                     },
-                                    onDelete: () {
-                                      menuNotifier.deleteItem(item["id"]);
+                                    onDelete: () async {
+                                      try {
+                                        await menuNotifier.deleteItem(item["id"]);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Product deleted successfully'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          String errorMessage = e.toString();
+                                          // Remove "Exception: " prefix if present
+                                          if (errorMessage.startsWith('Exception: ')) {
+                                            errorMessage = errorMessage.substring('Exception: '.length);
+                                          }
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(errorMessage),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      }
                                     },
                                   );
                                 },
@@ -571,7 +595,7 @@ class CategorySelectionWidgetState
                             isSelected ? FontWeight.bold : FontWeight.normal,
                         fontSize: 14,
                         color:
-                            isSelected ? const Color(0xFF54A079) : Colors.black,
+                            isSelected ? Theme.of(context).primaryColor : Colors.black,
                       ),
                     ),
                   ),
@@ -773,11 +797,11 @@ class _EmptyMenuState extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: _opacity(const Color(0xFF54A079), 0.12),
+              color: _opacity(Theme.of(context).primaryColor, 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.local_dining,
-                size: 52, color: Color(0xFF54A079)),
+            child: Icon(Icons.local_dining,
+                size: 52, color: Theme.of(context).primaryColor),
           ),
           const SizedBox(height: 20),
           Text(

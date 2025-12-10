@@ -1,0 +1,17 @@
+# Launcher icons configuration for JD's Kitchen brand
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/jds_kitchen/logo.png"
+
+  # Android-specific configuration
+  android_min_sdk_android: 21
+  android_adaptive_icon_background: "#144c9f"  # JD's Kitchen primary color
+  android_adaptive_icon_foreground: "assets/jds_kitchen/logo.png"
+
+  # iOS-specific configuration
+  ios_content_padding: 0
+
+  # Generate icons in flavor-specific directories
+  android_path: "android/app/src/jds_kitchen/res"
+  ios_path: "ios/Runner/Assets.xcassets/AppIcon-JdsKitchen.appiconset"

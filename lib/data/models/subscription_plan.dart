@@ -146,10 +146,17 @@ class SubscriptionDiscountTier {
       return double.tryParse(value.toString());
     }
 
+    final discountType = json['discount_type']?.toString().toLowerCase();
+    final value = parseDouble(json['value']);
+
     return SubscriptionDiscountTier(
       qty: SubscriptionPlan._asInt(json['qty'] ?? json['min_days']),
-      percentOff: parseDouble(json['percent_off'] ?? json['value']),
-      flatOff: parseDouble(json['flat_off']),
+      percentOff: discountType == 'percent'
+          ? value
+          : parseDouble(json['percent_off']),
+      flatOff: discountType == 'flat'
+          ? value
+          : parseDouble(json['flat_off']),
     );
   }
 }

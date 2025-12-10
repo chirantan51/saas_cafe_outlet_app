@@ -15,12 +15,13 @@ import android.os.Bundle
 import android.content.ContentResolver
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.chaimates/native"
+    // Use package name to create brand-specific channel to avoid conflicts
+    private val CHANNEL get() = "${packageName}/native"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.chaimates/native")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         .setMethodCallHandler { call, result ->
             if (call.method == "launchOrderAlert") {
                 val orderJson = call.argument<String>("order")  // This must be a String, not HashMap!

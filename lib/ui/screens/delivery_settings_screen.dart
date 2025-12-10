@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../providers/delivery_config_provider.dart';
 import '../../services/outlet_service.dart';
+import '../../config/flavor_config.dart';
 
 class DeliverySettingsScreen extends ConsumerStatefulWidget {
   final String outletId;
@@ -237,7 +238,7 @@ class _DeliverySettingsScreenState
         maxLines: 1,
       ),
     )..pushStyle(textStyle)
-     ..addText('Chaimates');
+     ..addText(FlavorConfig.instance.brandConfig.brandName);
 
     final paragraph = paragraphBuilder.build()
       ..layout(const ui.ParagraphConstraints(width: width));

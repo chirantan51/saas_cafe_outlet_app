@@ -13,9 +13,9 @@ class ReportsScreen extends StatelessWidget {
         title: const Text('Reports'),
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF54A079), Color(0xFF3B7C5F)],
+              colors: [Theme.of(context).primaryColor, Color(0xFF3B7C5F)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -43,7 +43,7 @@ class ReportsScreen extends StatelessWidget {
                     icon: Icons.trending_up,
                     title: 'Sales',
                     description: 'View sales data and revenue analytics',
-                    color: const Color(0xFF54A079),
+                    color: Theme.of(context).primaryColor,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -57,7 +57,7 @@ class ReportsScreen extends StatelessWidget {
                     icon: Icons.inventory_2,
                     title: 'Products & Sold Qty',
                     description: 'Product-wise sales in descending order',
-                    color: const Color(0xFF54A079),
+                    color: Theme.of(context).primaryColor,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(

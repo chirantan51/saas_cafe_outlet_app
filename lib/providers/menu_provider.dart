@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import '../constants.dart'; // BASE_URL
+import 'package:dio/dio.dart';
+
+import '../core/api_service.dart';
 
 /// ✅ **State Model for Menu**
 class MenuState {
@@ -59,23 +58,16 @@ class MenuNotifier extends StateNotifier<MenuState> {
     fetchMenuData(); // ✅ Fetch Data on Init
   }
 
-  /// ✅ Fetch Categories & Items from API
+  /// ✅ Fetch Categories & Items from API using ApiService
   Future<void> fetchMenuData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      String? authToken = prefs.getString("auth_token");
-      if (authToken == null) throw Exception("No authentication token found");
+      final api = ApiService();
 
-      final response = await http.get(
-        Uri.parse("$BASE_URL/api/products/grouped-by-category/"),
-        headers: {
-          "Authorization": "Token $authToken",
-          "Content-Type": "application/json",
-        },
-      );
+      // Make the API call - auth token and X-Brand-Id are automatically added
+      final response = await api.get('/api/products/grouped-by-category/');
 
       if (response.statusCode == 200) {
-        dynamic data = jsonDecode(response.body);
+        dynamic data = response.data;
         if (data == null || data.isEmpty || data is! List) {
           throw Exception("Invalid API Response Format");
         }
@@ -147,6 +139,11 @@ class MenuNotifier extends StateNotifier<MenuState> {
       } else {
         throw Exception("Failed to load menu data");
       }
+    } on DioException catch (e) {
+      if (_mounted) {
+        state = state.copyWith(isLoading: false);
+      }
+      print("❌ API Error: ${e.response?.statusCode} ${e.message}");
     } catch (e) {
       if (_mounted) {
         state = state.copyWith(isLoading: false);
@@ -173,16 +170,45 @@ class MenuNotifier extends StateNotifier<MenuState> {
   }
 
   /// ✅ Delete an Item
-  void deleteItem(String itemId) {
-    final updatedItems =
-        state.items.where((item) => item["id"] != itemId).toList();
-    final updatedFilteredItems =
-        state.filteredItems.where((item) => item["id"] != itemId).toList();
+  Future<void> deleteItem(String itemId) async {
+    try {
+      final api = ApiService();
+      final response = await api.delete('/api/products/$itemId/');
 
-    state = state.copyWith(
-      items: updatedItems,
-      filteredItems: updatedFilteredItems,
-    );
+      if (response.statusCode! >= 200 && response.statusCode! < 300) {
+        // Only update local state if API call was successful
+        final updatedItems =
+            state.items.where((item) => item["id"] != itemId).toList();
+        final updatedFilteredItems =
+            state.filteredItems.where((item) => item["id"] != itemId).toList();
+
+        if (_mounted) {
+          state = state.copyWith(
+            items: updatedItems,
+            filteredItems: updatedFilteredItems,
+          );
+        }
+      } else {
+        String errorMsg = 'Failed to delete product';
+        final errData = response.data;
+        if (errData is Map && errData['detail'] is String) {
+          errorMsg = errData['detail'];
+        }
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (e is DioException) {
+        String errorMsg = 'Failed to delete product';
+        final errData = e.response?.data;
+        if (errData is Map && errData['detail'] is String) {
+          errorMsg = errData['detail'];
+        } else if (e.response?.statusCode != null) {
+          errorMsg = '$errorMsg: ${e.response?.statusCode}';
+        }
+        throw Exception(errorMsg);
+      }
+      rethrow;
+    }
   }
 }
 

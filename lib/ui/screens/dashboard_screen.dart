@@ -135,7 +135,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       width: 160,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF54A079), // Primary Color
+        color: Theme.of(context).primaryColor, // Primary Color
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -183,7 +183,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         FloatingActionButton(
           heroTag: label, // Avoid hero animation issues
           onPressed: onPressed,
-          backgroundColor: const Color(0xFF54A079),
+          backgroundColor: Theme.of(context).primaryColor,
           mini: true,
           child: Icon(icon, color: Colors.white),
         ),
@@ -226,7 +226,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         style: GoogleFonts.dmSans(
           fontSize: 18,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF54A079),
+          color: Theme.of(context).primaryColor,
         ),
       ),
       actions: [
@@ -238,7 +238,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
             });
             // Handle shop On/Off logic here
           },
-          activeColor: const Color(0xFF54A079), // Customize switch color
+          activeColor: Theme.of(context).primaryColor, // Customize switch color
           inactiveThumbColor: Colors.grey, // Customize inactive thumb color
         ),
       ],
@@ -326,7 +326,7 @@ class _RecentOrdersWidgetState extends State<RecentOrdersWidget> {
                   //             const Color(0xFFEDF7ED), // light green background
                   //         borderRadius: BorderRadius.circular(20),
                   //         border: Border.all(
-                  //             color: const Color(0xFF54A079), width: 1),
+                  //             color: Theme.of(context).primaryColor, width: 1),
                   //       ),
                   //       child: Text(
                   //         "${item.productName} x${item.quantity}",

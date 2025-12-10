@@ -17,7 +17,7 @@ class SubscriptionPlanDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final product = plan.product;
-    final accent = const Color(0xFF54A079);
+    final accent = Theme.of(context).primaryColor;
 
     Future<bool> _handlePop() async {
       ref.invalidate(subscriptionPlansProvider);
@@ -43,12 +43,12 @@ class SubscriptionPlanDetailScreen extends ConsumerWidget {
               tooltip: 'Edit plan',
               icon: const Icon(Icons.edit_outlined),
               onPressed: () async {
-                final updated = await Navigator.of(context).push<bool>(
+                final result = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
                     builder: (_) => EditSubscriptionPlanScreen(plan: plan),
                   ),
                 );
-                if (updated == true) {
+                if (result == true) {
                   ref.invalidate(subscriptionPlansProvider);
                   SubscriptionPlan? refreshedPlan;
                   try {
@@ -63,6 +63,7 @@ class SubscriptionPlanDetailScreen extends ConsumerWidget {
                   } catch (_) {}
                   if (!context.mounted) return;
                   if (refreshedPlan != null) {
+                    // Plan still exists - it was updated
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (_) =>
@@ -70,11 +71,8 @@ class SubscriptionPlanDetailScreen extends ConsumerWidget {
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Subscription plan updated'),
-                      ),
-                    );
+                    // Plan doesn't exist anymore - it was deleted
+                    Navigator.of(context).pop();
                   }
                 }
               },
@@ -168,7 +166,7 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final product = plan.product;
     final theme = Theme.of(context);
-    final accent = const Color(0xFF54A079);
+    final accent = Theme.of(context).primaryColor;
 
     final status = product?.status ?? 'Unknown';
 
@@ -417,7 +415,7 @@ class _DiscountTiersCard extends StatelessWidget {
       return '${tier.percentOff!.toStringAsFixed(0)}% off';
     }
     if (tier.flatOff != null) {
-      return '₹${tier.flatOff!.toStringAsFixed(0)} off';
+      return '₹${tier.flatOff!.toStringAsFixed(0)} off/day';
     }
     return 'Custom discount';
   }
@@ -677,14 +675,14 @@ class _PlanSubscriptionsPreviewState
   }
 }
 
-class _SubscriptionPreviewRow extends StatelessWidget {
+class _SubscriptionPreviewRow extends ConsumerWidget {
   const _SubscriptionPreviewRow({required this.sub, required this.plan});
 
   final PlanSubscription sub;
   final SubscriptionPlan plan;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final start = _formatDate(sub.startDate) ?? '—';
     final totalQty = sub.totalQuantity ?? 0;
@@ -696,8 +694,8 @@ class _SubscriptionPreviewRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          final result = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => SubscriptionSubscriptionDetailScreen(
                 subscriptionId: sub.id,
@@ -706,6 +704,13 @@ class _SubscriptionPreviewRow extends StatelessWidget {
               ),
             ),
           );
+
+          // Refresh the subscriptions list if any update was made
+          if (result == true && context.mounted) {
+            // Trigger a refresh of the plan subscriptions provider
+            // This will reload the subscription list
+            ref.invalidate(planSubscriptionsProvider(plan.id));
+          }
         },
         child: Container(
           decoration: BoxDecoration(
@@ -857,7 +862,7 @@ class _QuickStatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: const Color(0xFF54A079)),
+          Icon(icon, size: 20, color: Theme.of(context).primaryColor),
           const SizedBox(height: 8),
           Text(
             value,

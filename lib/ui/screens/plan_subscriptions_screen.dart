@@ -18,7 +18,7 @@ class PlanSubscriptionsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('${plan.product?.name ?? 'Plan'} subscribers'),
-        backgroundColor: const Color(0xFF54A079),
+        backgroundColor: theme.primaryColor,
       ),
       body: SafeArea(
         child: asyncSubscriptions.when(
@@ -350,13 +350,13 @@ class _BadgeChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF54A079).withOpacity(0.08),
+        color: theme.primaryColor.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF54A079)),
+          Icon(icon, size: 16, color: theme.primaryColor),
           const SizedBox(width: 6),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

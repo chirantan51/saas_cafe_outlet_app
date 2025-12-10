@@ -7,6 +7,7 @@ import 'package:outlet_app/data/models/order_model.dart';
 import 'package:outlet_app/data/models/outlet_customer.dart';
 import 'package:outlet_app/data/models/plan_subscription.dart';
 import 'package:outlet_app/data/models/subscription_plan.dart';
+import 'package:outlet_app/data/models/subscription_models.dart';
 import 'package:outlet_app/providers/dashboard_refresh_provider.dart';
 import 'package:outlet_app/providers/menu_provider.dart';
 import 'package:outlet_app/services/customer_service.dart';
@@ -889,7 +890,7 @@ class _SubscriptionCreateSubscriptionScreenState
       }
 
       // In create mode, check minimum dates
-      if (!widget.isRescheduleMode && _totalDaysSelected < 5) {
+      if (!widget.isRescheduleMode && _totalUnitsSelected < _minDays!) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Select at least 5 dates to continue')),
         );
@@ -1079,7 +1080,7 @@ class _SubscriptionCreateSubscriptionScreenState
                 ? 'Subscription rescheduled successfully!'
                 : 'Subscription created successfully!',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).primaryColor,
         ),
       );
 
@@ -1180,9 +1181,9 @@ class _SubscriptionCreateSubscriptionScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Subscription updated successfully!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Subscription updated successfully!'),
+          backgroundColor: Theme.of(context).primaryColor,
         ),
       );
 
@@ -1357,28 +1358,29 @@ class _SubscriptionCreateSubscriptionScreenState
                 shrinkWrap: true,
                 itemCount: timeSlots.length,
                 itemBuilder: (context, index) {
+                  final theme = Theme.of(context);
                   final slot = timeSlots[index];
                   final isSelected = _selectedTimeSlot == slot;
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    elevation: isSelected ? 2 : 0,
-                    color: isSelected ? Colors.green.shade50 : null,
+                    //elevation: isSelected ? .5 : 0,
+                    color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
                     child: ListTile(
                       leading: Icon(
                         Icons.access_time,
-                        color: isSelected ? Colors.green : Colors.grey,
+                        color: isSelected ? theme.primaryColor : Colors.grey,
                       ),
                       title: Text(
                         slot,
                         style: TextStyle(
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Colors.green[800] : Colors.black,
+                          color: isSelected ? theme.primaryColor : Colors.black,
                         ),
                       ),
                       trailing: isSelected
-                          ? Icon(Icons.check_circle, color: Colors.green[700])
+                          ? Icon(Icons.check_circle, color: theme.primaryColor)
                           : null,
                       onTap: () {
                         setState(() {
@@ -1535,7 +1537,7 @@ class _SubscriptionCreateSubscriptionScreenState
                         onCreateCustomer: () => _handleCreateCustomer(context),
                       ),
                       CalendarDateSelector(
-                        minimumDatesToSelect: 5,
+                        minimumDatesToSelect: _minDays ?? 5,
                         onSelectionChanged:
                             (totalDays, totalUnits, selectedDates) {
                           setState(() {
@@ -1617,7 +1619,7 @@ class _SubscriptionCreateSubscriptionScreenState
                           // In create mode, check minimum dates
                           else if (!widget.isRescheduleMode &&
                               !_isEditMode &&
-                              _totalDaysSelected < 5) {
+                              _totalDaysSelected < _minDays!) {
                             isDisabled = true;
                             buttonColor = Colors.grey;
                           }
@@ -1654,13 +1656,15 @@ class _SubscriptionCreateSubscriptionScreenState
                                     ),
                                   )
                                 : const Icon(Icons.arrow_forward),
-                            label: Text(_isSubmitting
-                                ? 'Loading...'
-                                : _currentStep == 2
-                                    ? (_isEditMode || widget.isRescheduleMode
-                                        ? 'Update'
-                                        : 'Create')
-                                    : 'Next'),
+                            label: Text(
+                              _isSubmitting
+                                  ? 'Loading...'
+                                  : _currentStep == 2
+                                      ? (_isEditMode || widget.isRescheduleMode
+                                          ? 'Update'
+                                          : 'Create')
+                                      : 'Next',
+                            ),
                           ),
                         );
                       },
@@ -2027,6 +2031,7 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Builder(
                   builder: (context) {
+                    final theme = Theme.of(context);
                     final totalDays = _dateQuantities.length;
                     final totalUnits = _dateQuantities.values
                         .fold<int>(0, (sum, qty) => sum + qty);
@@ -2047,7 +2052,7 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                           style: TextStyle(
                             fontSize: 14,
                             color: meetsMinimum
-                                ? Colors.green
+                                ? theme.primaryColor
                                 : Colors.orange[700],
                             fontWeight: FontWeight.w500,
                           ),
@@ -2150,6 +2155,7 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                             return const SizedBox.shrink();
                           }
 
+                          final theme = Theme.of(context);
                           final dayIndex = index - firstDayWeekday;
                           final date = daysInMonth[dayIndex];
                           final normalized = _normalizeDate(date);
@@ -2172,7 +2178,7 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: isSelected
-                                        ? Colors.green
+                                        ? theme.primaryColor
                                         : isLastSelected
                                             ? Colors.orange
                                             : Colors.transparent,
@@ -2194,7 +2200,7 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                                               '${date.day}',
                                               style: TextStyle(
                                                 color: isSelected
-                                                    ? Colors.green
+                                                    ? theme.primaryColor
                                                     : Colors.black,
                                                 fontWeight: isSelected
                                                     ? FontWeight.bold
@@ -2206,8 +2212,7 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                                               Text(
                                                 'x$quantity',
                                                 style: TextStyle(
-                                                  color: Colors.green
-                                                      .withOpacity(0.9),
+                                                  color: theme.primaryColor.withValues(alpha: 0.9),
                                                   fontSize: 9,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -2257,89 +2262,94 @@ class _CalendarDateSelectorState extends State<CalendarDateSelector>
                       ),
                     ),
                   )
-                : Column(
-                    children: [
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 8),
-                        title: Text(
-                          '${_lastSelectedDate!.day} ${_getMonthName(_lastSelectedDate!.month)}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _getDayName(_lastSelectedDate!.weekday),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        trailing: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                                color: Colors.green.shade300, width: 1.5),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: const BorderRadius.horizontal(
-                                      left: Radius.circular(30)),
-                                  onTap: () => _updateQuantity(-1),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Icon(
-                                      Icons.remove,
-                                      color: Colors.green[700],
-                                      size: 24,
+                : Builder(
+                    builder: (context) {
+                      final theme = Theme.of(context);
+                      return Column(
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 8),
+                            title: Text(
+                              '${_lastSelectedDate!.day} ${_getMonthName(_lastSelectedDate!.month)}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              _getDayName(_lastSelectedDate!.weekday),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            trailing: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: theme.primaryColor.withValues(alpha: 0.5), width: 1.5),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: const BorderRadius.horizontal(
+                                          left: Radius.circular(30)),
+                                      onTap: () => _updateQuantity(-1),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Icon(
+                                          Icons.remove,
+                                          color: theme.primaryColor,
+                                          size: 24,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              Container(
-                                constraints: const BoxConstraints(minWidth: 40),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '${_dateQuantities[_lastSelectedDate] ?? 1}',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green[800],
+                                  Container(
+                                    constraints: const BoxConstraints(minWidth: 40),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: theme.primaryColor.withValues(alpha: 0.1),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${_dateQuantities[_lastSelectedDate] ?? 1}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.primaryColor,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: const BorderRadius.horizontal(
-                                      right: Radius.circular(30)),
-                                  onTap: () => _updateQuantity(1),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Icon(
-                                      Icons.add,
-                                      color: Colors.green[700],
-                                      size: 24,
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: const BorderRadius.horizontal(
+                                          right: Radius.circular(30)),
+                                      onTap: () => _updateQuantity(1),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Icon(
+                                          Icons.add,
+                                          color: theme.primaryColor,
+                                          size: 24,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
           ],
         ),
@@ -2845,9 +2855,9 @@ class _CustomerSelectionStep extends StatelessWidget {
                                     ),
                                   ),
                                   if (isSelected)
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle,
-                                      color: Color(0xFF54A079),
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                 ],
                               ),
@@ -4022,7 +4032,7 @@ class _QuantityRow extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFF54A079)),
+            border: Border.all(color: Theme.of(context).primaryColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -4149,7 +4159,7 @@ class _StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF54A079);
+    final accent = Theme.of(context).primaryColor;
     final muted = const Color(0xFFE5E7EB);
     final theme = Theme.of(context);
 
@@ -4210,7 +4220,7 @@ class _StepIndicator extends StatelessWidget {
                   _steps[index].title,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: index <= currentStep
                         ? accent
                         : theme.textTheme.labelLarge?.color,
@@ -4359,7 +4369,7 @@ class _QuantityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = const Color(0xFF54A079);
+    final color = Theme.of(context).primaryColor;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
@@ -4627,7 +4637,7 @@ class _SelectedOrderItem {
 }
 
 // Review Step Widget
-class _ReviewStep extends StatelessWidget {
+class _ReviewStep extends StatefulWidget {
   const _ReviewStep({
     required this.subscriptionPlan,
     required this.selectedCustomer,
@@ -4650,24 +4660,93 @@ class _ReviewStep extends StatelessWidget {
   final bool isRescheduleMode;
   final int? originalTotalQuantity;
 
+  @override
+  State<_ReviewStep> createState() => _ReviewStepState();
+}
+
+class _ReviewStepState extends State<_ReviewStep> {
+  SubscriptionQuoteResponse? _quoteResponse;
+  bool _isLoadingQuote = false;
+  String? _quoteError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only fetch quote for create mode, not reschedule
+    if (!widget.isRescheduleMode) {
+      _fetchQuote();
+    }
+  }
+
+  Future<void> _fetchQuote() async {
+    if (widget.subscriptionPlan == null ||
+        widget.selectedAddress == null ||
+        widget.selectedCustomer == null ||
+        widget.selectedDatesWithQuantities.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingQuote = true;
+      _quoteError = null;
+    });
+
+    try {
+      // Build dates array in format: [{date: "YYYY-MM-DD", qty: 1}, ...]
+      final dateFormat = DateFormat('yyyy-MM-dd');
+      final dates = widget.selectedDatesWithQuantities.entries
+          .map((entry) => {
+                'date': dateFormat.format(entry.key),
+                'qty': entry.value,
+              })
+          .toList();
+
+      final quote = await SubscriptionService.getSubscriptionQuote(
+        productId: widget.subscriptionPlan!.productId,
+        addressId: widget.selectedAddress!.id.toString(),
+        customerId: widget.selectedCustomer!.customerId.toString(),
+        dates: dates,
+      );
+
+      setState(() {
+        _quoteResponse = quote;
+        _isLoadingQuote = false;
+      });
+    } catch (e) {
+      setState(() {
+        _quoteError = e.toString();
+        _isLoadingQuote = false;
+      });
+    }
+  }
+
   double _calculateSubtotal() {
-    if (subscriptionPlan?.product?.price == null) return 0.0;
+    if (_quoteResponse != null) {
+      return _quoteResponse!.summary.grossTotalPaise / 100.0;
+    }
+
+    // Fallback to local calculation for reschedule mode
+    if (widget.subscriptionPlan?.product?.price == null) return 0.0;
     final pricePerUnit =
-        double.tryParse(subscriptionPlan!.product!.price!) ?? 0.0;
-    final totalUnits = selectedDatesWithQuantities.values
+        double.tryParse(widget.subscriptionPlan!.product!.price!) ?? 0.0;
+    final totalUnits = widget.selectedDatesWithQuantities.values
         .fold<int>(0, (sum, qty) => sum + qty);
     return pricePerUnit * totalUnits;
   }
 
   double _calculateDiscount() {
-    final subtotal = _calculateSubtotal();
-    final totalDays = selectedDatesWithQuantities.length;
+    if (_quoteResponse != null) {
+      return _quoteResponse!.summary.discountPaise / 100.0;
+    }
 
-    // Find applicable discount tier
-    if (subscriptionPlan?.discountTiers.isEmpty ?? true) return 0.0;
+    // Fallback to local calculation for reschedule mode
+    final subtotal = _calculateSubtotal();
+    final totalDays = widget.selectedDatesWithQuantities.length;
+
+    if (widget.subscriptionPlan?.discountTiers.isEmpty ?? true) return 0.0;
 
     SubscriptionDiscountTier? applicableTier;
-    for (final tier in subscriptionPlan!.discountTiers) {
+    for (final tier in widget.subscriptionPlan!.discountTiers) {
       if (tier.qty != null && totalDays >= tier.qty!) {
         applicableTier = tier;
       }
@@ -4680,13 +4759,16 @@ class _ReviewStep extends StatelessWidget {
       discount = subtotal * (applicableTier.percentOff! / 100);
     }
     if (applicableTier.flatOff != null) {
-      discount += applicableTier.flatOff!;
+      discount += applicableTier.flatOff! * totalDays;
     }
 
     return discount;
   }
 
   double _calculateNetTotal() {
+    if (_quoteResponse != null) {
+      return _quoteResponse!.summary.netTotalPaise / 100.0;
+    }
     return _calculateSubtotal() - _calculateDiscount();
   }
 
@@ -4700,7 +4782,7 @@ class _ReviewStep extends StatelessWidget {
     final netTotal = _calculateNetTotal();
 
     // Sort dates chronologically
-    final sortedDates = selectedDatesWithQuantities.keys.toList()
+    final sortedDates = widget.selectedDatesWithQuantities.keys.toList()
       ..sort((a, b) => a.compareTo(b));
 
     return SingleChildScrollView(
@@ -4709,7 +4791,7 @@ class _ReviewStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Reschedule Mode Summary
-          if (isRescheduleMode && originalTotalQuantity != null)
+          if (widget.isRescheduleMode && widget.originalTotalQuantity != null)
             Card(
               color: Colors.orange.shade50,
               child: Padding(
@@ -4720,7 +4802,7 @@ class _ReviewStep extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You must maintain the original total quantity of $originalTotalQuantity units',
+                        'You must maintain the original total quantity of ${widget.originalTotalQuantity} units',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -4729,11 +4811,11 @@ class _ReviewStep extends StatelessWidget {
               ),
             ),
 
-          if (isRescheduleMode && originalTotalQuantity != null)
+          if (widget.isRescheduleMode && widget.originalTotalQuantity != null)
             const SizedBox(height: 16),
 
           // Product/Plan Information (only show in create mode)
-          if (!isRescheduleMode)
+          if (!widget.isRescheduleMode)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -4748,13 +4830,13 @@ class _ReviewStep extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      subscriptionPlan?.product?.name ?? 'Unknown Product',
+                      widget.subscriptionPlan?.product?.name ?? 'Unknown Product',
                       style: theme.textTheme.titleLarge,
                     ),
-                    if (subscriptionPlan?.product?.description != null) ...[
+                    if (widget.subscriptionPlan?.product?.description != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        subscriptionPlan!.product!.description!,
+                        widget.subscriptionPlan!.product!.description!,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),
@@ -4768,7 +4850,7 @@ class _ReviewStep extends StatelessWidget {
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          '₹${subscriptionPlan?.product?.price ?? '0'}',
+                          '₹${widget.subscriptionPlan?.product?.price ?? '0'}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1E3A2F),
@@ -4784,7 +4866,7 @@ class _ReviewStep extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Customer Information (only show in create mode)
-          if (!isRescheduleMode)
+          if (!widget.isRescheduleMode)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -4799,13 +4881,13 @@ class _ReviewStep extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      selectedCustomer?.name ?? 'No customer selected',
+                      widget.selectedCustomer?.name ?? 'No customer selected',
                       style: theme.textTheme.titleSmall,
                     ),
-                    if (selectedCustomer?.mobile != null) ...[
+                    if (widget.selectedCustomer?.mobile != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        selectedCustomer!.mobile!,
+                        widget.selectedCustomer!.mobile!,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -4818,13 +4900,13 @@ class _ReviewStep extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      selectedAddress?.address ?? 'No address selected',
+                      widget.selectedAddress?.address ?? 'No address selected',
                       style: theme.textTheme.bodyMedium,
                     ),
-                    if (selectedAddress?.pinCode != null) ...[
+                    if (widget.selectedAddress?.pinCode != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Pin: ${selectedAddress!.pinCode}',
+                        'Pin: ${widget.selectedAddress!.pinCode}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -4833,10 +4915,10 @@ class _ReviewStep extends StatelessWidget {
               ),
             ),
 
-          if (!isRescheduleMode) const SizedBox(height: 16),
+          if (!widget.isRescheduleMode) const SizedBox(height: 16),
 
           // Time Slot (only show in create mode)
-          if (!isRescheduleMode && selectedTimeSlot != null)
+          if (!widget.isRescheduleMode && widget.selectedTimeSlot != null)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -4845,7 +4927,7 @@ class _ReviewStep extends StatelessWidget {
                     const Icon(Icons.access_time, size: 20),
                     const SizedBox(width: 12),
                     Text(
-                      'Delivery Time: $selectedTimeSlot',
+                      'Delivery Time: ${widget.selectedTimeSlot}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -4882,7 +4964,7 @@ class _ReviewStep extends StatelessWidget {
                   const SizedBox(height: 8),
                   // List of dates with quantities
                   ...sortedDates.map((date) {
-                    final quantity = selectedDatesWithQuantities[date] ?? 0;
+                    final quantity = widget.selectedDatesWithQuantities[date] ?? 0;
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Row(
@@ -4908,20 +4990,41 @@ class _ReviewStep extends StatelessWidget {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
+                              horizontal: 16,
+                              vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1E3A2F)
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Qty: $quantity',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1E3A2F),
+                              gradient: LinearGradient(
+                                colors: [
+                                  theme.primaryColor.withValues(alpha: 0.15),
+                                  theme.primaryColor.withValues(alpha: 0.08),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: theme.primaryColor.withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: theme.primaryColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$quantity',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.primaryColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -4936,40 +5039,65 @@ class _ReviewStep extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Price Breakdown (only show in create mode)
-          if (!isRescheduleMode)
+          if (!widget.isRescheduleMode)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _PriceRow(
-                      label: 'Subtotal',
-                      value: '₹${subtotal.toStringAsFixed(2)}',
-                    ),
-                    if (discount > 0) ...[
-                      const SizedBox(height: 8),
-                      _PriceRow(
-                        label: 'Discount',
-                        value: '- ₹${discount.toStringAsFixed(2)}',
-                        valueColor: Colors.green,
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                    _PriceRow(
-                      label: 'Net Total',
-                      value: '₹${netTotal.toStringAsFixed(2)}',
-                      labelStyle: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      valueStyle: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E3A2F),
-                      ),
-                    ),
-                  ],
-                ),
+                child: _isLoadingQuote
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : _quoteError != null
+                        ? Column(
+                            children: [
+                              Text(
+                                'Error loading quote',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.red,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _quoteError!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.red[700],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              _PriceRow(
+                                label: 'Subtotal',
+                                value: '₹${subtotal.toStringAsFixed(2)}',
+                              ),
+                              if (discount > 0) ...[
+                                const SizedBox(height: 8),
+                                _PriceRow(
+                                  label: 'Discount',
+                                  value: '- ₹${discount.toStringAsFixed(2)}',
+                                  valueColor: theme.primaryColor,
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              const Divider(),
+                              const SizedBox(height: 12),
+                              _PriceRow(
+                                label: 'Net Total',
+                                value: '₹${netTotal.toStringAsFixed(2)}',
+                                labelStyle: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                valueStyle: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E3A2F),
+                                ),
+                              ),
+                            ],
+                          ),
               ),
             ),
 

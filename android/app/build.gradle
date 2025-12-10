@@ -23,9 +23,15 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-def mapsApiKey = localProperties.getProperty('MAPS_API_KEY') ?: System.getenv('MAPS_API_KEY') ?: ""
-if (!mapsApiKey) {
-    println "Warning: Google Maps API key not set. Add MAPS_API_KEY to local.properties or environment to avoid runtime crashes."
+// Flavor-specific Maps API Keys
+def chaimatesMapsApiKey = localProperties.getProperty('CHAIMATES_MAPS_API_KEY') ?: System.getenv('CHAIMATES_MAPS_API_KEY') ?: ""
+def jdsKitchenMapsApiKey = localProperties.getProperty('JDS_KITCHEN_MAPS_API_KEY') ?: System.getenv('JDS_KITCHEN_MAPS_API_KEY') ?: ""
+
+if (!chaimatesMapsApiKey) {
+    println "Warning: Chaimates Maps API key not set. Add CHAIMATES_MAPS_API_KEY to local.properties"
+}
+if (!jdsKitchenMapsApiKey) {
+    println "Warning: JD's Kitchen Maps API key not set. Add JDS_KITCHEN_MAPS_API_KEY to local.properties"
 }
 
 android {
@@ -54,9 +60,32 @@ android {
         versionName flutterVersionName
         multiDexEnabled true
         manifestPlaceholders = [
-                applicationName: "io.flutter.app.FlutterApplication",
-                MAPS_API_KEY : mapsApiKey
+                applicationName: "io.flutter.app.FlutterApplication"
         ]
+    }
+
+    flavorDimensions "brand"
+
+    productFlavors {
+        chaimates {
+            dimension "brand"
+            applicationId "com.saas_outlet_app.chaimates"
+            resValue "string", "app_name", "Chaimates - Outlet"
+            manifestPlaceholders = [
+                    applicationName: "io.flutter.app.FlutterApplication",
+                    MAPS_API_KEY : chaimatesMapsApiKey
+            ]
+        }
+
+        jds_kitchen {
+            dimension "brand"
+            applicationId "com.saas_outlet_app.jds_kitchen"
+            resValue "string", "app_name", "JD\\'s Kitchen - Outlet"
+            manifestPlaceholders = [
+                    applicationName: "io.flutter.app.FlutterApplication",
+                    MAPS_API_KEY : jdsKitchenMapsApiKey
+            ]
+        }
     }
 
     buildTypes {

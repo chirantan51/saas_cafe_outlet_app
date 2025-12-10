@@ -1,0 +1,25 @@
+## This file contains the configuration for flavor-specific API keys
+## Copy this file to local.properties and add your actual API keys
+
+## Flutter SDK path (auto-generated)
+# sdk.dir=/path/to/flutter/sdk
+
+## Flutter version (auto-generated)
+# flutter.sdk=/path/to/flutter
+
+## Google Maps API Keys (Brand-specific)
+## After creating API keys in Google Cloud Console, add them here:
+
+# Chaimates Maps API Key
+# Restricted to package: com.chaimates.outlet_app
+CHAIMATES_MAPS_API_KEY=your_chaimates_maps_api_key_here
+
+# JD's Kitchen Maps API Key
+# Restricted to package: com.saas_outlet_app.jds_kitchen
+JDS_KITCHEN_MAPS_API_KEY=your_jds_kitchen_maps_api_key_here
+
+## Instructions:
+## 1. Go to Google Cloud Console: https://console.cloud.google.com
+## 2. Create API keys for each brand with package restrictions
+## 3. Replace the placeholder values above with your actual API keys
+## 4. DO NOT commit local.properties to git (already in .gitignore)
